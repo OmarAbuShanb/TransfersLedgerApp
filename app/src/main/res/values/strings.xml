@@ -1,0 +1,42 @@
+<resources>
+    <string name="app_name">PalPay Tracker</string>
+
+    <!-- Main Screen -->
+    <string name="main_title">Wallet Tracker</string>
+    <string name="today_summary">ملخص اليوم</string>
+    <string name="last_transactions">آخر التحويلات</string>
+    <string name="no_transactions">لا توجد تحويلات حتى الآن</string>
+    <string name="currency_symbol">₪</string>
+
+    <string name="palpay_label">PalPay</string>
+    <string name="jawwalpay_label">Jawwal Pay</string>
+
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="tracking_toggle">تتبع التحويلات</string>
+    <string name="tracking_desc">تشغيل أو إيقاف مراقبة إشعارات المحافظ</string>
+    <string name="notif_permission">صلاحية الإشعارات</string>
+    <string name="permission_enabled">مفعلة</string>
+    <string name="permission_disabled">معطلة</string>
+    <string name="system_settings">إعدادات النظام</string>
+    <string name="battery_optimization">تحسين البطارية</string>
+    <string name="battery_ignored">مستثنى (يعمل بشكل جيد)</string>
+    <string name="battery_restricted">مقيد بواسطة النظام</string>
+    <string name="edit">تعديل</string>
+    <string name="back">رجوع</string>
+
+    <!-- Alerts -->
+    <string name="battery_alert_title">تحسين البطارية مفعل</string>
+    <string name="battery_alert_desc">يرجى استثناء التطبيق من تحسين البطارية لضمان استمرار عمل الخدمة.</string>
+    <string name="battery_allow_btn">تغيير الإعدادات</string>
+
+    <string name="notif_alert_title">الوصول للإشعارات معطل</string>
+    <string name="notif_alert_desc">يجب تفعيل الصلاحية ليتمكن التطبيق من التقاط التحويلات.</string>
+    <string name="activate_permission_btn">تفعيل الآن</string>
+
+    <!-- Foreground Service -->
+    <string name="service_running_title">تتبع المحافظ نشط</string>
+    <string name="service_monitoring">التطبيق يعمل في الخلفية لالتقاط إشعارات الحوالات</string>
+    <string name="notif_summary_template">إحصائيات اليوم: PalPay: %1$.2f ₪ | JawwalPay: %2$.2f ₪ | المجموع: %3$.2f ₪</string>
+
+</resources>
