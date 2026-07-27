@@ -1,42 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">PalPay Tracker</string>
-
-    <!-- Main Screen -->
-    <string name="main_title">Wallet Tracker</string>
-    <string name="today_summary">ملخص اليوم</string>
-    <string name="last_transactions">آخر التحويلات</string>
-    <string name="no_transactions">لا توجد تحويلات حتى الآن</string>
+    <string name="app_name">دفتر الحوالات</string>
+    <string name="main_title">دفتر الحوالات</string>
+    <string name="settings_title">الإعدادات</string>
+    <string name="search_title">البحث</string>
+    <string name="customer_title">حوالات الزبون</string>
+    <string name="back">رجوع</string>
     <string name="currency_symbol">₪</string>
 
+    <string name="wallet_total_title">إجمالي المحافظ والبنوك</string>
+    <string name="daily_total">الإجمالي اليومي</string>
+    <string name="weekly_total">إجمالي آخر 7 أيام</string>
+    <string name="monthly_total">إجمالي آخر 30 يوم</string>
+    <string name="yearly_total">إجمالي آخر سنة</string>
+    <string name="all_total">إجمالي كل الحوالات</string>
+    <string name="custom_total">مخصص</string>
+    <string name="incoming_label">وارد</string>
+    <string name="outgoing_label">صادر</string>
+    <string name="net_label">الصافي</string>
     <string name="palpay_label">PalPay</string>
     <string name="jawwalpay_label">Jawwal Pay</string>
+    <string name="bop_label">بنك فلسطين</string>
 
-    <!-- Settings -->
-    <string name="settings_title">الإعدادات</string>
-    <string name="tracking_toggle">تتبع التحويلات</string>
+    <string name="last_transactions">آخر الحوالات</string>
+    <string name="all_transactions_title">كل الحوالات</string>
+    <string name="incoming_transactions_title">الحوالات الواردة</string>
+    <string name="outgoing_transactions_title">الحوالات الصادرة</string>
+    <string name="no_transactions">لا توجد حوالات حتى الآن</string>
+    <string name="today_header">اليوم</string>
+    <string name="yesterday_header">أمس</string>
+    <string name="all_filter">الكل</string>
+    <string name="incoming_filter">الحوالات الواردة</string>
+    <string name="outgoing_filter">الحوالات الصادرة</string>
+    <string name="date_filter">حسب التاريخ</string>
+    <string name="mark_outgoing">الحوالة أنا أرسلتها</string>
+    <string name="mark_incoming">الحوالة قادمة من زبون</string>
+    <string name="customer_transactions">كل حوالات هذا الزبون</string>
+    <string name="create_customer">إنشاء زبون</string>
+    <string name="link_customer">ربط بزبون</string>
+    <string name="link_customer_title">ربط الحوالة بزبون</string>
+    <string name="search_customers_hint">ابحث في الزبائن</string>
+    <string name="no_customers">لا يوجد زبائن بعد</string>
+    <string name="no_matching_customers">لا توجد نتائج مطابقة</string>
+    <string name="confirm_link_customer_title">تأكيد الربط</string>
+    <string name="confirm_link_customer_message">هل تريد ربط هذه الحوالة بالزبون: %1$s؟</string>
+    <string name="link">ربط</string>
+    <string name="customer_accounts_title">الحسابات المرتبطة</string>
+    <string name="unlink">إلغاء الربط</string>
+    <string name="confirm_unlink_title">إلغاء ربط الحساب</string>
+    <string name="confirm_unlink_message">هل تريد إلغاء ربط %1$s من %2$s بهذا الزبون؟</string>
+    <string name="confirm_delete_customer_title">حذف الزبون</string>
+    <string name="confirm_delete_customer_message">هذا آخر حساب مرتبط بهذا الزبون. هل تريد إلغاء الربط وحذف الزبون؟</string>
+    <string name="delete">حذف</string>
+    <string name="customer_name_hint">اسم الزبون</string>
+    <string name="save">حفظ</string>
+    <string name="cancel">إلغاء</string>
+    <string name="ok">موافق</string>
+
+    <string name="tracking_toggle">تتبع الحوالات</string>
     <string name="tracking_desc">تشغيل أو إيقاف مراقبة إشعارات المحافظ</string>
-    <string name="notif_permission">صلاحية الإشعارات</string>
-    <string name="permission_enabled">مفعلة</string>
-    <string name="permission_disabled">معطلة</string>
+    <string name="notif_permission">صلاحية الوصول للإشعارات</string>
+    <string name="permission_enabled">✓ مفعلة</string>
+    <string name="permission_disabled">✕ معطلة</string>
+    <string name="notif_permission_enabled_desc">مفعلة — التطبيق قادر على التقاط وتتبع إشعارات الحوالات.</string>
+    <string name="notif_permission_disabled_desc">معطلة — يلزم تفعيل الصلاحية ليتعرف التطبيق على الحوالات.</string>
     <string name="system_settings">إعدادات النظام</string>
     <string name="battery_optimization">تحسين البطارية</string>
-    <string name="battery_ignored">مستثنى (يعمل بشكل جيد)</string>
-    <string name="battery_restricted">مقيد بواسطة النظام</string>
+    <string name="battery_ignored">✓ مستثنى</string>
+    <string name="battery_restricted">⚠️ مقيد بواسطة النظام</string>
+    <string name="battery_ignored_desc">مستثنى — التطبيق يعمل بدون قيود على طاقة البطارية.</string>
+    <string name="battery_restricted_desc">مقيد — قيود تحسين البطارية قد تؤدي لتوقف التتبع عند سكون الجهاز.</string>
     <string name="edit">تعديل</string>
-    <string name="back">رجوع</string>
 
-    <!-- Alerts -->
+    <string name="autostart_title">التشغيل التلقائي في الخلفية</string>
+    <string name="autostart_desc">تفعيل هذا الخيار يضمن عدم إيقاف واجهة التشغيل المخصصة من الشركة المصنعة (OEM) لتتبع الحوالات في الخلفية.</string>
+    <string name="autostart_unverifiable_note">ملاحظة: لا يمكن للتطبيق التحقق برمجياً من تفعيلك للخيار، يُرجى التأكد من تفعيله داخل إعدادات النظام.</string>
+    <string name="autostart_supported_status">✓ يُنصح بالتفعيل</string>
+    <string name="autostart_unsupported_status">✕ غير مدعوم لهذا الجهاز</string>
+    <string name="autostart_unsupported_desc">طراز جهازك أو نظام التشغيل لا يحتاج إلى ضبط خيار التشغيل التلقائي الخاص بالشركات المصنعة.</string>
+    <string name="autostart_open_btn">فتح الإعدادات</string>
+    <string name="autostart_error">تعذر فتح شاشة إعدادات التشغيل التلقائي الخاصة بجهازك.</string>
+
+    <string name="dont_kill_my_app_title">دليل ضمان عمل التطبيق في الخلفية</string>
+    <string name="dont_kill_my_app_desc">دليل خارجي باللغة الإنجليزية يوضح كيفية ضبط إعدادات جهازك لضمان عدم إيقاف تتبع الحوالات في الخلفية مع أمثلة لعدة تطبيقات.</string>
+    <string name="dont_kill_my_app_btn">فتح الدليل</string>
+
     <string name="battery_alert_title">تحسين البطارية مفعل</string>
-    <string name="battery_alert_desc">يرجى استثناء التطبيق من تحسين البطارية لضمان استمرار عمل الخدمة.</string>
+    <string name="battery_alert_desc">استثن التطبيق من تحسين البطارية لضمان استمرار عمل الخدمة.</string>
     <string name="battery_allow_btn">تغيير الإعدادات</string>
-
     <string name="notif_alert_title">الوصول للإشعارات معطل</string>
-    <string name="notif_alert_desc">يجب تفعيل الصلاحية ليتمكن التطبيق من التقاط التحويلات.</string>
+    <string name="notif_alert_desc">يجب تفعيل الصلاحية ليتمكن التطبيق من التقاط الحوالات.</string>
     <string name="activate_permission_btn">تفعيل الآن</string>
 
-    <!-- Foreground Service -->
-    <string name="service_running_title">تتبع المحافظ نشط</string>
-    <string name="service_monitoring">التطبيق يعمل في الخلفية لالتقاط إشعارات الحوالات</string>
-    <string name="notif_summary_template">إحصائيات اليوم: PalPay: %1$.2f ₪ | JawwalPay: %2$.2f ₪ | المجموع: %3$.2f ₪</string>
+    <string name="search_hint">ابحث باسم، رقم هاتف، أو مبلغ</string>
+    <string name="search_tip">يمكنك البحث في الحوالات من خلال اسم الشخص أو مبلغ الحوالة أو ابدأ البحث بـ 05 للبحث عبر رقم الهاتف.</string>
+    <string name="search_empty_prompt">ابدأ بكتابة اسم، رقم هاتف، أو مبلغ للبحث</string>
+    <string name="no_search_results">لا توجد نتائج مطابقة</string>
 
+    <string name="date_dialog_title">تحديد الفترة</string>
+    <string name="export_dialog_title">تصدير كشف Excel</string>
+    <string name="single_day">يوم محدد</string>
+    <string name="date_range">نطاق زمني</string>
+    <string name="single_day_date_label">تاريخ اليوم</string>
+    <string name="start_date">تاريخ البداية</string>
+    <string name="end_date">تاريخ النهاية</string>
+    <string name="apply">تطبيق</string>
+    <string name="export">تصدير</string>
+    <string name="excel_permission_reason">سيتم حفظ كشف Excel مباشرة في مجلد التنزيلات حتى تتمكن من مشاركته أو فتحه لاحقا.</string>
+    <string name="excel_empty">لا توجد حوالات ضمن الفترة المحددة</string>
+    <string name="excel_success">تم حفظ ملف Excel: %1$s</string>
+    <string name="open_file">فتح</string>
+
+    <string name="service_running_title">تتبع المحافظ نشط</string>
+    <string name="service_boot_starting_title">جاري إعادة تشغيل الخدمة…</string>
+    <string name="service_monitoring">التطبيق يعمل في الخلفية لالتقاط إشعارات الحوالات</string>
+    <string name="service_blocked_title">تتبع المحافظ متوقف</string>
+    <string name="service_notification_access_blocked">توقف التتبع لأن الوصول للإشعارات غير مفعل. افتح التطبيق لتفعيل الصلاحية.</string>
+    <string name="service_tracking_disabled">تم إيقاف تتبع المحافظ من الإعدادات.</string>
+    <string name="service_channel_name">خدمة التتبع الصامتة</string>
+    <string name="service_channel_desc">قناة هادئة لخدمة تتبع الحوالات</string>
+    <string name="notif_summary_template">اليوم: PalPay %1$.2f ₪ | JawwalPay %2$.2f ₪ | بنك فلسطين %3$.2f ₪</string>
+    <string name="service_latest_transfer_template">آخر حوالة: %1$s • %2$.2f ₪ • %3$s — تعتبر واردة افتراضيا</string>
+    <string name="mark_as_outgoing_action">جعلها صادرة مني</string>
+    <string name="customers_title">الزبائن</string>
+    <string name="customer_accounts_count">%1$d حسابات مرتبطة</string>
+    <string name="customer_incoming_total">وارد: %1$s %2$s</string>
+    <string name="backup_restore_title">النسخ الاحتياطي والاسترداد</string>
+    <string name="backup_restore_desc">احفظ نسخة من الحوالات والزبائن والحسابات المرتبطة، أو استبدل البيانات الحالية بنسخة محفوظة.</string>
+    <string name="create_backup">إنشاء نسخة</string>
+    <string name="restore_backup">استرداد نسخة</string>
+    <string name="backup_success">تم إنشاء النسخة الاحتياطية بنجاح</string>
+    <string name="backup_failed">تعذر إنشاء النسخة الاحتياطية</string>
+    <string name="restore_success">تم استرداد النسخة الاحتياطية بنجاح</string>
+    <string name="restore_failed">تعذر استرداد النسخة الاحتياطية</string>
+    <string name="backup_invalid">ملف النسخة الاحتياطية غير صالح أو تم تعديله</string>
+    <string name="restore_warning_title">استبدال كامل البيانات</string>
+    <string name="restore_warning_message">سيتم حذف كل الحوالات والزبائن والحسابات المرتبطة الحالية واستبدالها ببيانات النسخة الاحتياطية. لا يمكن التراجع عن هذه العملية.</string>
+
+    <string name="jawwal_pay_source_title">مصدر إشعارات جوال باي</string>
+    <string name="jawwal_pay_source_desc">اختر كيف يتلقى التطبيق إشعارات حوالات جوال باي</string>
+    <string name="jawwal_pay_mode_sms">رسائل SMS</string>
+    <string name="jawwal_pay_mode_sms_desc">أضمن — يعمل تلقائياً عند كل الناس</string>
+    <string name="jawwal_pay_mode_app">تطبيق جوال باي</string>
+    <string name="jawwal_pay_mode_app_desc">يتضمن الرقم المرجعي — يتطلب تفعيل إشعارات التطبيق</string>
 </resources>

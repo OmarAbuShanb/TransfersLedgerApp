@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Widget.TransfersLedger.MaterialSwitch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="trackColor">@color/switch_track_tint</item>
+        <item name="thumbColor">@color/switch_thumb_tint</item>
+        <item name="trackTint">@color/switch_track_tint</item>
+        <item name="thumbTint">@color/switch_thumb_tint</item>
+        <item name="trackDecorationTint">@color/switch_outline_tint</item>
+    </style>
+</resources>

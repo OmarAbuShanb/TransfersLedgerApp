@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <color name="app_bg">#F7F7FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#EEF0F6</color>
+    <color name="primary">#B2258C</color>
+    <color name="primary_dark">#861A69</color>
+    <color name="primary_soft">#F8D8EF</color>
+    <color name="jawwal_green">#16A34A</color>
+    <color name="jawwal_soft">#DCFCE7</color>
+    <color name="bop_blue">#2563EB</color>
+    <color name="bop_soft">#DBEAFE</color>
+    <color name="text_primary">#1F2937</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="incoming">#15803D</color>
+    <color name="incoming_soft">#EAF7EF</color>
+    <color name="outgoing">#DC2626</color>
+    <color name="outgoing_soft">#FEECEC</color>
+    <color name="warning_bg">#FEF3C7</color>
+    <color name="warning_stroke">#F59E0B</color>
+    <color name="warning_button_bg">#92400E</color>
+    <color name="warning_text">#78350F</color>
+    <color name="divider">#E5E7EB</color>
 </resources>
