@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "ps.palpay.tracker"
+        applicationId = "dev.anonymous.transfers_ledger"
         minSdk = 23
         targetSdk = 37
         versionCode = 1

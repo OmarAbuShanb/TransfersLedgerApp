@@ -34,7 +34,7 @@ import dev.anonymous.transfers_ledger.ui.viewmodel.MainViewModel
 class SearchActivity : ComponentActivity() {
     private lateinit var binding: ActivitySearchBinding
     private lateinit var adapter: TransactionPagingAdapter
-    private val repository by lazy { (application as PalPayApplication).repository }
+    private val repository by lazy { (application as TransfersLedgerApplication).repository }
     private val viewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, repository)
     }

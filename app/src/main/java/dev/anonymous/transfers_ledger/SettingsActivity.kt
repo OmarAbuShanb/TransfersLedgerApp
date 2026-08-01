@@ -6,7 +6,8 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.ComponentActivity
+import android.widget.RadioGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -18,6 +19,8 @@ import dev.anonymous.autostarter.AutoStartResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.view.Menu
+import android.view.MenuItem
 import dev.anonymous.transfers_ledger.core.IntentUtils
 import dev.anonymous.transfers_ledger.core.backup.BackupCodec
 import dev.anonymous.transfers_ledger.databinding.ActivitySettingsBinding
@@ -26,15 +29,14 @@ import dev.anonymous.transfers_ledger.ui.common.AppDialogs
 import dev.anonymous.transfers_ledger.core.JawwalPayMode
 import java.text.SimpleDateFormat
 import java.util.Date
-import dev.anonymous.transfers_ledger.R
 import java.util.Locale
 import dev.anonymous.transfers_ledger.ui.viewmodel.MainViewModel
 
-class SettingsActivity : ComponentActivity() {
+class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var trackingSwitch: MaterialSwitch
     private var updatingSwitchFromState = false
-    private val repository by lazy { (application as PalPayApplication).repository }
+    private val repository by lazy { (application as TransfersLedgerApplication).repository }
     private val viewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, repository)
     }
@@ -60,6 +62,31 @@ class SettingsActivity : ComponentActivity() {
         binding.batterySettingsButton.setOnClickListener {
             startActivity(IntentUtils.getBatteryOptimizationIntent(this))
         }
+        binding.overflowButton.setOnClickListener { v ->
+            dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.show(
+                this,
+                v,
+                listOf(
+                    dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.Action(
+                        title = getString(R.string.overview_title),
+                        onClick = { showOverviewDialog() }
+                    ),
+                    dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.Action(
+                        title = getString(R.string.contact_developer),
+                        onClick = {
+                            val deviceHash = dev.anonymous.transfers_ledger.license.DeviceIdProvider.getHashedId(this@SettingsActivity)
+                            val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            try {
+                                startActivity(intent)
+                            } catch (e: Exception) {
+                                Snackbar.make(binding.root, "واتساب غير مثبت", Snackbar.LENGTH_LONG).show()
+                            }
+                        }
+                    )
+                )
+            )
+        }
         binding.autostartSettingsButton.setOnClickListener {
             openAutoStartSettings()
         }
@@ -67,9 +94,11 @@ class SettingsActivity : ComponentActivity() {
             openDontKillMyAppGuide()
         }
         binding.createBackupButton.setOnClickListener {
+            if (requireActivation()) return@setOnClickListener
             createBackupLauncher.launch(backupFileName())
         }
         binding.restoreBackupButton.setOnClickListener {
+            if (requireActivation()) return@setOnClickListener
             restoreBackupLauncher.launch(arrayOf("application/octet-stream", "*/*"))
         }
         trackingSwitch.setOnCheckedChangeListener { _, checked ->
@@ -81,7 +110,7 @@ class SettingsActivity : ComponentActivity() {
         bindAutoStartStatus()
 
         // Listener for JawwalPay mode selection
-        binding.jawwalPayModeGroup.setOnCheckedChangeListener { _, checkedId ->
+        val modeChangeListener = RadioGroup.OnCheckedChangeListener { _, checkedId ->
             val mode = when (checkedId) {
                 R.id.radioApp -> JawwalPayMode.APP
                 R.id.radioSms -> JawwalPayMode.SMS
@@ -89,6 +118,7 @@ class SettingsActivity : ComponentActivity() {
             }
             viewModel.setJawwalPayMode(mode)
         }
+        binding.jawwalPayModeGroup.setOnCheckedChangeListener(modeChangeListener)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -101,9 +131,17 @@ class SettingsActivity : ComponentActivity() {
                     bindNotificationStatus(state.listenerConnected)
                     bindBatteryStatus(state.batteryOptimizationIgnored)
                     // Update JawwalPay source mode UI
-                    when (state.jawwalPayMode) {
-                        JawwalPayMode.APP -> binding.jawwalPayModeGroup.check(R.id.radioApp)
-                        JawwalPayMode.SMS -> binding.jawwalPayModeGroup.check(R.id.radioSms)
+                    val currentCheckedId = binding.jawwalPayModeGroup.checkedRadioButtonId
+                    val targetCheckedId = when (state.jawwalPayMode) {
+                        JawwalPayMode.APP -> R.id.radioApp
+                        JawwalPayMode.SMS -> R.id.radioSms
+                    }
+                    if (currentCheckedId != targetCheckedId) {
+                        binding.jawwalPayModeGroup.setOnCheckedChangeListener(null)
+                        binding.jawwalPayModeGroup.check(targetCheckedId)
+                        binding.radioApp.jumpDrawablesToCurrentState()
+                        binding.radioSms.jumpDrawablesToCurrentState()
+                        binding.jawwalPayModeGroup.setOnCheckedChangeListener(modeChangeListener)
                     }
                 }
             }
@@ -242,6 +280,66 @@ class SettingsActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.refreshSystemStatus()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_settings, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_overview -> {
+                showOverviewDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showOverviewDialog() {
+        AppDialogs.showOverview(this)
+    }
+
+    /**
+     * Returns true (and shows activation dialog) when the app is NOT activated,
+     * meaning the caller should abort its action.
+     * Returns false when the app is activated and the action can proceed.
+     */
+    private fun requireActivation(): Boolean {
+        val lm = dev.anonymous.transfers_ledger.license.LicenseManager.getInstance(this)
+        if (lm.isActivated) return false
+
+        AppDialogs.showFeatureNotAvailableDialog(
+            context = this,
+            onActivateClick = {
+                val deviceHash = dev.anonymous.transfers_ledger.license.DeviceIdProvider.getHashedId(this)
+                AppDialogs.showActivationDialog(
+                    context = this,
+                    deviceIdHash = deviceHash,
+                    message = getString(R.string.license_activate_manual_message),
+                    isCancelable = true,
+                    onWhatsappClick = {
+                        val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        try {
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            Snackbar.make(binding.root, "واتساب غير مثبت", Snackbar.LENGTH_LONG).show()
+                        }
+                    },
+                    onActivate = { code ->
+                        if (lm.activate(code)) {
+                            Snackbar.make(binding.root, R.string.license_activate_success, Snackbar.LENGTH_LONG).show()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                )
+            }
+        )
+        return true
     }
 
     private fun updateForegroundService(enabled: Boolean) {

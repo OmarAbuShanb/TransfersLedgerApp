@@ -23,6 +23,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PalPayTrackerApp"
+rootProject.name = "TransfersLedgerApp"
 include(":app")
- 
+include(":keygen")

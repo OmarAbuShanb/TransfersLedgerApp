@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import dev.anonymous.transfers_ledger.MainActivity
-import dev.anonymous.transfers_ledger.PalPayApplication
+import dev.anonymous.transfers_ledger.TransfersLedgerApplication
 import dev.anonymous.transfers_ledger.R
 import dev.anonymous.transfers_ledger.core.SystemStatusUtils
 import dev.anonymous.transfers_ledger.core.TransactionStatsCalculator
@@ -89,7 +89,7 @@ class TrackingForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val repository = (application as PalPayApplication).repository
+        val repository = (application as TransfersLedgerApplication).repository
 
         if (intent?.action == ACTION_MARK_OUTGOING) {
             val transactionId = intent.getLongExtra(EXTRA_TRANSACTION_ID, -1L)
@@ -415,8 +415,8 @@ class TrackingForegroundService : Service() {
     )
 
     companion object {
-        const val ACTION_MARK_OUTGOING = "ps.palpay.tracker.action.MARK_OUTGOING"
-        const val ACTION_BOOT_START = "ps.palpay.tracker.action.BOOT_START"
+        const val ACTION_MARK_OUTGOING = "dev.anonymous.transfers_ledger.action.MARK_OUTGOING"
+        const val ACTION_BOOT_START = "dev.anonymous.transfers_ledger.action.BOOT_START"
         const val EXTRA_TRANSACTION_ID = "transaction_id"
         private const val NOTIFICATION_PERMISSION_CHECK_INTERVAL_MS = 5000L
     }

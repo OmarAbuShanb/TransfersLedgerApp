@@ -30,6 +30,22 @@
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
+            <TextView
+                android:id="@+id/activateButton"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_icon_button"
+                android:clipToOutline="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="انقر للتفعيل"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
             <ImageButton
                 android:id="@+id/exportButton"
                 android:layout_width="44dp"
@@ -40,7 +56,8 @@
                 android:contentDescription="@string/export"
                 android:foreground="?attr/selectableItemBackground"
                 android:padding="10dp"
-                android:src="@drawable/ic_excel_24" />
+                android:src="@drawable/ic_excel_24"
+                app:tint="@color/text_primary" />
 
             <ImageButton
                 android:id="@+id/customersButton"
@@ -52,7 +69,8 @@
                 android:contentDescription="@string/customers_title"
                 android:foreground="?attr/selectableItemBackground"
                 android:padding="10dp"
-                android:src="@drawable/ic_customers_24" />
+                android:src="@drawable/ic_customers_24"
+                app:tint="@color/text_primary" />
 
             <ImageButton
                 android:id="@+id/settingsButton"
@@ -64,7 +82,8 @@
                 android:contentDescription="@string/settings_title"
                 android:foreground="?attr/selectableItemBackground"
                 android:padding="10dp"
-                android:src="@drawable/ic_settings_24" />
+                android:src="@drawable/ic_settings_24"
+                app:tint="@color/text_primary" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView

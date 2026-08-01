@@ -245,6 +245,10 @@ class TransactionRepository(
     suspend fun hasTransactionsInRange(range: DateRange): Boolean {
         return transactionDao.countTransactionsInRange(range.startAt, range.endAt) > 0
     }
+    
+    suspend fun getTotalTransactionCount(): Int {
+        return transactionDao.countTransactionsInRange(null, null)
+    }
 
     suspend fun rangeForPeriod(period: SummaryPeriod): DateRange {
         val todayStart = startOfDay()

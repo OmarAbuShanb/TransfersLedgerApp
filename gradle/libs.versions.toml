@@ -18,6 +18,8 @@ activity = "1.13.0"
 fastexcel = "0.20.2"
 material = "1.12.0"
 enhancedAutostarter = "1.0.0"
+appcompat = "1.7.1"
+constraintlayout = "2.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +53,8 @@ androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", 
 fastexcel = { group = "org.dhatim", name = "fastexcel", version.ref = "fastexcel" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 enhanced-autostarter = { group = "io.github.omarabushanb", name = "enhanced-autostarter", version.ref = "enhancedAutostarter" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

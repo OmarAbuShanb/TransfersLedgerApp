@@ -100,7 +100,11 @@ class DateRangeDialog(
                 .scaleX(0.96f)
                 .scaleY(0.96f)
                 .setDuration(190L)
-                .withEndAction { dialog.dismiss() }
+                .withEndAction {
+                    try {
+                        if (dialog.isShowing) dialog.dismiss()
+                    } catch (_: Exception) {}
+                }
                 .start()
         }
 

@@ -63,7 +63,7 @@ object AppDialogs {
         initialValue: String,
         onSave: (String) -> Unit
     ) {
-        if (activeDialog?.isShowing == true) return
+        safeDismiss(activeDialog)
 
         val binding = DialogTextInputBinding.inflate(LayoutInflater.from(context))
         val dialog = createDialog(context)
@@ -93,7 +93,7 @@ object AppDialogs {
         context: Context,
         onApply: () -> Unit
     ) {
-        if (activeDialog?.isShowing == true) return
+        safeDismiss(activeDialog)
 
         val binding = DialogExportNoticeBinding.inflate(LayoutInflater.from(context))
         val dialog = createDialog(context)
@@ -107,6 +107,20 @@ object AppDialogs {
         showWide(dialog, binding.root, motion)
     }
 
+    fun showOverview(context: Context) {
+        safeDismiss(activeDialog)
+
+        val binding = dev.anonymous.transfers_ledger.databinding.DialogOverviewBinding.inflate(LayoutInflater.from(context))
+        val dialog = createDialog(context)
+        val motion = DialogMotion.HORIZONTAL_SLIDE
+
+        binding.okButton.setOnClickListener {
+            dismissWithAnimation(dialog, binding.root, motion)
+        }
+
+        showWide(dialog, binding.root, motion)
+    }
+
     fun showConfirmation(
         context: Context,
         title: String,
@@ -114,7 +128,7 @@ object AppDialogs {
         positiveText: String,
         onConfirm: () -> Unit
     ) {
-        if (activeDialog?.isShowing == true) return
+        safeDismiss(activeDialog)
 
         val binding = DialogExportNoticeBinding.inflate(LayoutInflater.from(context))
         val dialog = createDialog(context)
@@ -129,6 +143,85 @@ object AppDialogs {
         }
 
         showWide(dialog, binding.root, motion)
+    }
+
+    fun showActivationDialog(
+        context: Context,
+        deviceIdHash: String,
+        message: String,
+        isCancelable: Boolean,
+        onWhatsappClick: () -> Unit,
+        onActivate: (String) -> Boolean
+    ) {
+        safeDismiss(activeDialog)
+
+        val binding = dev.anonymous.transfers_ledger.databinding.DialogActivationBinding.inflate(LayoutInflater.from(context))
+        val dialog = createDialog(context)
+        val motion = DialogMotion.BOTTOM_SCALE_FADE
+        
+        dialog.setCancelable(isCancelable)
+        if (!isCancelable) {
+            dialog.setOnKeyListener { _, keyCode, event ->
+                keyCode == android.view.KeyEvent.KEYCODE_BACK && event.action == android.view.KeyEvent.ACTION_UP
+            }
+        }
+        
+        binding.messageText.text = message
+        binding.deviceIdText.text = context.getString(dev.anonymous.transfers_ledger.R.string.license_device_id, deviceIdHash)
+        
+        binding.whatsappButton.setOnClickListener {
+            onWhatsappClick()
+        }
+
+        binding.applyButton.setOnClickListener {
+            val code = binding.inputText.text.toString().trim()
+            if (code.isNotBlank()) {
+                val success = onActivate(code)
+                if (success) {
+                    dismissWithAnimation(dialog, binding.root, motion)
+                } else {
+                    binding.errorText.visibility = android.view.View.VISIBLE
+                    binding.errorText.text = context.getString(dev.anonymous.transfers_ledger.R.string.license_error_invalid_code)
+                }
+            } else {
+                binding.errorText.visibility = android.view.View.VISIBLE
+                binding.errorText.text = context.getString(dev.anonymous.transfers_ledger.R.string.license_error_empty_code)
+            }
+        }
+
+        showWide(
+            dialog, binding.root, motion,
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN,
+            dismissOnOutsideClick = isCancelable
+        )
+    }
+
+    fun showFeatureNotAvailableDialog(
+        context: Context,
+        onActivateClick: () -> Unit
+    ) {
+        safeDismiss(activeDialog)
+        
+        val binding = dev.anonymous.transfers_ledger.databinding.DialogFeatureLockedBinding.inflate(LayoutInflater.from(context))
+        val dialog = createDialog(context)
+        val motion = DialogMotion.BOTTOM_SCALE_FADE
+        
+        dialog.setCancelable(true)
+        
+        binding.cancelButton.setOnClickListener {
+            dismissWithAnimation(dialog, binding.root, motion)
+        }
+        
+        binding.activateButton.setOnClickListener {
+            dismissWithAnimation(dialog, binding.root, motion) {
+                onActivateClick()
+            }
+        }
+        
+        showWide(
+            dialog, binding.root, motion,
+            dismissOnOutsideClick = true
+        )
     }
 
     fun showCustomerLinkSheet(
@@ -153,7 +246,7 @@ object AppDialogs {
                 message = context.getString(R.string.confirm_link_customer_message, customer.displayName),
                 positiveText = context.getString(R.string.link)
             ) {
-                dialog.dismiss()
+                safeDismiss(dialog)
                 onLink(customer)
             }
         }
@@ -219,7 +312,8 @@ object AppDialogs {
         dialog: Dialog,
         content: android.view.View,
         motion: DialogMotion,
-        softInputMode: Int = 0
+        softInputMode: Int = 0,
+        dismissOnOutsideClick: Boolean = true
     ) {
         activeDialog = dialog
         dialog.setOnDismissListener {
@@ -242,8 +336,10 @@ object AppDialogs {
         contentParams.marginEnd = hMarginPx
         wrapper.addView(content, contentParams)
 
-        wrapper.setOnClickListener {
-            dismissWithAnimation(dialog, content, motion)
+        if (dismissOnOutsideClick) {
+            wrapper.setOnClickListener {
+                dismissWithAnimation(dialog, content, motion)
+            }
         }
         content.setOnClickListener {
             // Consume clicks inside the content card so they don't propagate to wrapper
@@ -264,6 +360,24 @@ object AppDialogs {
         animateDialogContent(content, motion, entering = true)
     }
 
+    private fun safeDismiss(dialog: Dialog?) {
+        if (dialog == null) return
+        try {
+            if (dialog.isShowing) {
+                val context = dialog.context
+                if (context is android.app.Activity) {
+                    if (!context.isFinishing && !context.isDestroyed) {
+                        dialog.dismiss()
+                    }
+                } else {
+                    dialog.dismiss()
+                }
+            }
+        } catch (_: Exception) {
+            // Ignore if window was already detached or activity destroyed
+        }
+    }
+
     private fun dismissWithAnimation(
         dialog: Dialog,
         content: android.view.View,
@@ -272,7 +386,7 @@ object AppDialogs {
     ) {
         content.animate().cancel()
         animateDialogContent(content, motion, entering = false) {
-            dialog.dismiss()
+            safeDismiss(dialog)
             afterDismiss?.invoke()
         }
     }

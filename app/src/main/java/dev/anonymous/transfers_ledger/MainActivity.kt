@@ -16,6 +16,8 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import dev.anonymous.transfers_ledger.core.IntentUtils
+import dev.anonymous.transfers_ledger.license.LicenseManager
+import dev.anonymous.transfers_ledger.license.DeviceIdProvider
 import dev.anonymous.transfers_ledger.core.TimeUtils
 import dev.anonymous.transfers_ledger.core.export.ExcelExporter
 import dev.anonymous.transfers_ledger.data.local.db.TransactionEntity
@@ -40,7 +42,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var headerAdapter: MainHeaderAdapter
     private lateinit var adapter: TransactionPagingAdapter
     private lateinit var emptyStateAdapter: EmptyStateAdapter
-    private val repository by lazy { (application as PalPayApplication).repository }
+    private val repository by lazy { (application as TransfersLedgerApplication).repository }
     private val viewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, repository)
     }
@@ -113,6 +115,15 @@ class MainActivity : ComponentActivity() {
         }
         binding.exportButton.setOnClickListener { explainAndExport() }
 
+        // Show overview dialog on first launch of the app in MainActivity
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        if (!prefs.getBoolean("overview_shown", false)) {
+            binding.root.post {
+                AppDialogs.showOverview(this)
+            }
+            prefs.edit().putBoolean("overview_shown", true).apply()
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { viewModel.uiState.collect { renderState(it) } }
@@ -120,10 +131,65 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    
+    private fun checkLicenseLimit() {
+        val lm = LicenseManager.getInstance(this)
+        if (lm.isActivated) {
+            binding.activateButton.visibility = android.view.View.GONE
+            return
+        }
+        
+        binding.activateButton.visibility = android.view.View.VISIBLE
+        binding.activateButton.setOnClickListener { showActivationDialog(isManual = true) }
+        
+        lifecycleScope.launch {
+            val count = repository.getTotalTransactionCount()
+            if (count >= 100) {
+                showActivationDialog(isManual = false)
+            }
+        }
+    }
+    
+    private fun showActivationDialog(isManual: Boolean) {
+        val deviceHash = DeviceIdProvider.getHashedId(this)
+        
+        val message = if (isManual) {
+            getString(R.string.license_activate_manual_message)
+        } else {
+            getString(R.string.license_activate_message)
+        }
+        
+        AppDialogs.showActivationDialog(
+            context = this,
+            deviceIdHash = deviceHash,
+            message = message,
+            isCancelable = isManual,
+            onWhatsappClick = {
+                val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Snackbar.make(binding.root, "واتساب غير مثبت", Snackbar.LENGTH_LONG).show()
+                }
+            },
+            onActivate = { code ->
+                val lm = LicenseManager.getInstance(this)
+                if (lm.activate(code)) {
+                    Snackbar.make(binding.root, R.string.license_activate_success, Snackbar.LENGTH_LONG).show()
+                    checkLicenseLimit()
+                    true
+                } else {
+                    false
+                }
+            }
+        )
+    }
 
     override fun onResume() {
         super.onResume()
         viewModel.refreshSystemStatus()
+        checkLicenseLimit()
     }
 
     private fun renderState(state: AppStatus) {

@@ -19,17 +19,20 @@ object PaymentNotificationParser {
                 rule(
                     name = "PalPay English pay-to-friend",
                     regex = "Transfer\\s+Pay-to-Friend:$SPACES(.*?)$SPACES[,،]$SPACES(?:amount\\s+of|بمبلغ)$SPACES(?:ILS$SPACES)?$AMOUNT",
-                    directionMode = DirectionMode.INCOMING
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
+                    outgoingHints = listOf("WALLET")
                 ),
                 rule(
                     name = "PalPay Arabic pay-to-friend",
                     regex = "تحويل\\s+دفع\\s+لصديق:$SPACES(.*?)$SPACES[,،]$SPACES(?:بمبلغ|amount\\s+of)$SPACES(?:ILS$SPACES)?$AMOUNT",
-                    directionMode = DirectionMode.INCOMING
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
+                    outgoingHints = listOf("WALLET")
                 ),
                 rule(
                     name = "PalPay short pay-to-friend",
                     regex = "Pay-to-Friend:$SPACES(.*?)$SPACES[,،]$SPACES(?:amount\\s+of|بمبلغ)$SPACES(?:ILS$SPACES)?$AMOUNT",
-                    directionMode = DirectionMode.INCOMING
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
+                    outgoingHints = listOf("WALLET")
                 )
             )
         ),
@@ -55,6 +58,26 @@ object PaymentNotificationParser {
                     name = "JawwalPay Arabic outgoing (IBAN transfer)",
                     regex = "تم\\s+تحويل\\s+مبلغ\\s+الى${SPACES}(.*?)\\s+بقيمة${SPACES}(?:ILS${SPACES})?${AMOUNT}",
                     directionMode = DirectionMode.OUTGOING
+                ),
+                rule(
+                    name = "JawwalPay English incoming with reference",
+                    regex = "\"Money\\s+Transfer\"\\s+transaction\\s+with\\s+an\\s+amount\\s+of:${SPACES}(?:ILS${SPACES})?${AMOUNT}${SPACES},${SPACES}from:${SPACES}(.*?)\\s+is\\s+done\\s+successfully.*?Reference\\s+ID:${SPACES}(\\d+)",
+                    directionMode = DirectionMode.INCOMING,
+                    senderGroup = 2,
+                    amountGroup = 1,
+                    referenceGroup = 3
+                ),
+                rule(
+                    name = "JawwalPay English incoming (no reference)",
+                    regex = "\"Money\\s+Transfer\"\\s+transaction\\s+with\\s+an\\s+amount\\s+of:${SPACES}(?:ILS${SPACES})?${AMOUNT}${SPACES},${SPACES}from:${SPACES}(.*?)\\s+is\\s+done\\s+successfully",
+                    directionMode = DirectionMode.INCOMING,
+                    senderGroup = 2,
+                    amountGroup = 1
+                ),
+                rule(
+                    name = "JawwalPay English incoming (transfer to account)",
+                    regex = "([^\\n]+?)\\s+has\\s+transferred\\s+an\\s+amount\\s+of\\s+(?:ILS\\s+)?${AMOUNT}\\s+to\\s+your\\s+account",
+                    directionMode = DirectionMode.INCOMING
                 )
             )
         ),
@@ -66,22 +89,26 @@ object PaymentNotificationParser {
                 rule(
                     name = "BOP English mobile banking transfer",
                     regex = "Mobile:${SPACES}Banking\\s+transfer:${SPACES}(.*?)${SPACES}[,،]${SPACES}amount\\s+of${SPACES}${AMOUNT}${SPACES}ILS",
-                    directionMode = DirectionMode.INCOMING
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
+                    outgoingHints = listOf("WALLET")
                 ),
                 rule(
                     name = "BOP English pay-to-friend",
                     regex = "Transfer\\s+Pay-to-Friend:${SPACES}(.*?)${SPACES}[,،]${SPACES}amount\\s+of${SPACES}(?:ILS${SPACES})?${AMOUNT}",
-                    directionMode = DirectionMode.INCOMING
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
+                    outgoingHints = listOf("WALLET")
                 ),
                 rule(
                     name = "BOP Arabic pay-to-friend",
                     regex = "تحويل\\s+دفع\\s+لصديق:${SPACES}(.*?)${SPACES}[,،]${SPACES}(?:بمبلغ|amount\\s+of)${SPACES}(?:ILS${SPACES})?${AMOUNT}",
-                    directionMode = DirectionMode.INCOMING
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
+                    outgoingHints = listOf("WALLET")
                 ),
                 rule(
                     name = "BOP Arabic banking transfer",
                     regex = "تحويل\\s+بنكي:${SPACES}(.*?)${SPACES}[,،]${SPACES}بمبلغ${SPACES}(?:ILS${SPACES})?${AMOUNT}",
-                    directionMode = DirectionMode.INCOMING
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
+                    outgoingHints = listOf("WALLET")
                 )
             )
         ),
@@ -113,6 +140,32 @@ object PaymentNotificationParser {
                     name = "JawwalPay SMS Arabic outgoing (IBAN transfer)",
                     regex = "تم\\s+تحويل\\s+مبلغ\\s+الى${SPACES}(.*?)\\s+بقيمة${SPACES}(?:ILS${SPACES})?${AMOUNT}",
                     directionMode = DirectionMode.OUTGOING
+                ),
+                rule(
+                    name = "JawwalPay SMS English outgoing (to customer)",
+                    regex = "Your\\s+\"Money\\s+Transfer\"\\s+transaction\\s+with\\s+an\\s+amount\\s+of:${SPACES}(?:ILS${SPACES})?${AMOUNT}${SPACES},${SPACES}to\\s+customer:${SPACES}(.*?)\\s+is\\s+done\\s+successfully",
+                    directionMode = DirectionMode.OUTGOING,
+                    senderGroup = 2,
+                    amountGroup = 1
+                ),
+                rule(
+                    name = "JawwalPay SMS English outgoing (from account)",
+                    regex = "Amount\\s+(?:ILS\\s+)?${AMOUNT}\\s+has\\s+been\\s+transferred\\s+from\\s+your\\s+account\\s+to\\s+(\\S+)",
+                    directionMode = DirectionMode.OUTGOING,
+                    senderGroup = 2,
+                    amountGroup = 1
+                ),
+                rule(
+                    name = "JawwalPay SMS English incoming (transfer to account)",
+                    regex = "([^\\n]+?)\\s+has\\s+transferred\\s+an\\s+amount\\s+of\\s+(?:ILS\\s+)?${AMOUNT}\\s+to\\s+your\\s+account",
+                    directionMode = DirectionMode.INCOMING
+                ),
+                rule(
+                    name = "JawwalPay SMS English incoming (from phone)",
+                    regex = "\"Money\\s+Transfer\"\\s+transaction\\s+with\\s+an\\s+amount\\s+of:${SPACES}(?:ILS${SPACES})?${AMOUNT}${SPACES},${SPACES}from:${SPACES}(.*?)\\s+is\\s+done\\s+successfully",
+                    directionMode = DirectionMode.INCOMING,
+                    senderGroup = 2,
+                    amountGroup = 1
                 )
             )
         )

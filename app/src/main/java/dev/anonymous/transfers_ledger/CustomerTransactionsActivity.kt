@@ -28,7 +28,7 @@ class CustomerTransactionsActivity : ComponentActivity() {
     private lateinit var binding: ActivityCustomerTransactionsBinding
     private lateinit var adapter: TransactionListAdapter
     private lateinit var accountsAdapter: CustomerAccountAdapter
-    private val repository by lazy { (application as PalPayApplication).repository }
+    private val repository by lazy { (application as TransfersLedgerApplication).repository }
     private var sender: String = ""
 
     // Reactive customer ID. Initialized from the Intent extra. When the user creates

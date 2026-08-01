@@ -7,7 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.service.notification.NotificationListenerService
 import androidx.core.content.ContextCompat
-import dev.anonymous.transfers_ledger.service.PalPayNotificationListener
+import dev.anonymous.transfers_ledger.service.TransfersLedgerNotificationListener
 import dev.anonymous.transfers_ledger.service.TrackingForegroundService
 
 /**
@@ -30,7 +30,7 @@ class BootReceiver : BroadcastReceiver() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 try {
                     NotificationListenerService.requestRebind(
-                        ComponentName(context, PalPayNotificationListener::class.java)
+                        ComponentName(context, TransfersLedgerNotificationListener::class.java)
                     )
                 } catch (_: Exception) { }
             }

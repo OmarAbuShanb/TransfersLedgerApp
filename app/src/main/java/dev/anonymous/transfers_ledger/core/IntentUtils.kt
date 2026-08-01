@@ -5,14 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
-import dev.anonymous.transfers_ledger.service.PalPayNotificationListener
+import dev.anonymous.transfers_ledger.service.TransfersLedgerNotificationListener
 
 object IntentUtils {
 
     fun getNotificationListenerSettingsIntent(context: Context): Intent {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
-                val componentName = ComponentName(context, PalPayNotificationListener::class.java)
+                val componentName = ComponentName(context, TransfersLedgerNotificationListener::class.java)
                 putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, componentName.flattenToString())
             }
         } else {

@@ -12,8 +12,14 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
+    <queries>
+        <intent>
+            <action android:name="android.provider.Telephony.SMS_DELIVER" />
+        </intent>
+    </queries>
+
     <application
-        android:name=".PalPayApplication"
+        android:name=".TransfersLedgerApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -55,7 +61,7 @@
             android:exported="false" />
 
         <service
-            android:name=".service.PalPayNotificationListener"
+            android:name=".service.TransfersLedgerNotificationListener"
             android:exported="true"
             android:label="PalPay Notification Listener"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">

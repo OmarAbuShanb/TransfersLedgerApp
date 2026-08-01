@@ -91,7 +91,7 @@ abstract class TransactionDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     TransactionDatabase::class.java,
-                    "palpay_tracker_db"
+                    "transfers_ledger_db"
                 )
                     .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
                     .build()

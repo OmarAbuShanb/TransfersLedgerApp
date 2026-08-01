@@ -5,7 +5,7 @@ import dev.anonymous.transfers_ledger.data.local.db.TransactionDatabase
 import dev.anonymous.transfers_ledger.data.local.pref.DataStoreManager
 import dev.anonymous.transfers_ledger.data.repository.TransactionRepository
 
-class PalPayApplication : Application() {
+class TransfersLedgerApplication : Application() {
 
     lateinit var repository: TransactionRepository
         private set
