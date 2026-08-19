@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import dev.anonymous.transfers_ledger.MainActivity
-import dev.anonymous.transfers_ledger.TransfersLedgerApplication
+import dev.anonymous.transfers_ledger.app.TransfersLedgerApplication
+import dev.anonymous.transfers_ledger.ui.screens.MainActivity
 import dev.anonymous.transfers_ledger.R
 import dev.anonymous.transfers_ledger.core.SystemStatusUtils
 import dev.anonymous.transfers_ledger.core.TransactionStatsCalculator
@@ -40,6 +40,7 @@ import dev.anonymous.transfers_ledger.domain.model.DateRange
 import dev.anonymous.transfers_ledger.domain.model.TransactionDirection
 import java.util.Calendar
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 
 class TrackingForegroundService : Service() {
 
@@ -167,7 +168,7 @@ class TrackingForegroundService : Service() {
     private fun notificationListenerEnabledFlow() = flow {
         while (true) {
             emit(SystemStatusUtils.isNotificationListenerEnabled(this@TrackingForegroundService))
-            delay(NOTIFICATION_PERMISSION_CHECK_INTERVAL_MS)
+            delay(NOTIFICATION_PERMISSION_CHECK_INTERVAL_MS.milliseconds)
         }
     }.distinctUntilChanged()
 
@@ -197,10 +198,10 @@ class TrackingForegroundService : Service() {
         .distinctUntilChanged()
 
     // Ticker flow that emits once immediately, then once per day at midnight.
-    private fun timerBasedDayFlow() = flow<Unit> {
+    private fun timerBasedDayFlow() = flow {
         emit(Unit)
         while (true) {
-            delay(millisUntilNextDay())
+            delay(millisUntilNextDay().milliseconds)
             emit(Unit)
         }
     }
@@ -306,7 +307,7 @@ class TrackingForegroundService : Service() {
         val builder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(title)
             .setContentText(content)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification_ledger)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -323,7 +324,7 @@ class TrackingForegroundService : Service() {
             )
         }
 
-        if (latestLine != null && convertibleTransaction != null) {
+        if (latestLine != null) {
             builder
                 .setStyle(NotificationCompat.BigTextStyle().bigText("$content\n$latestLine"))
                 .addAction(

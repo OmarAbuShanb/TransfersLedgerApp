@@ -67,52 +67,6 @@ interface TransactionDao {
         FROM transactions t
         LEFT JOIN customers c ON c.id = t.customerId
         LEFT JOIN customer_identifiers ci ON ci.customerId = c.id
-        WHERE (:direction IS NULL OR t.direction = :direction)
-          AND (
-            :normalizedQuery = ''
-            OR replace(replace(replace(replace(lower(c.displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
-            OR (
-                ci.type != 'PHONE'
-                AND replace(replace(replace(replace(lower(ci.normalizedValue), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
-            )
-            OR (
-                :searchPhone = 1
-                AND ci.type = 'PHONE'
-                AND replace(replace(replace(replace(lower(ci.normalizedValue), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
-            )
-            OR (
-                replace(replace(replace(replace(lower(t.normalizedSender), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
-                AND (
-                    :searchPhone = 1
-                    OR (
-                        t.normalizedSender NOT LIKE '05%' 
-                        AND t.normalizedSender NOT LIKE '0097%' 
-                        AND t.normalizedSender NOT LIKE '+97%' 
-                        AND t.normalizedSender NOT LIKE '97%' 
-                        AND t.normalizedSender NOT LIKE '25%'
-                    )
-                )
-            )
-            OR (:amount IS NOT NULL AND abs(t.amount - :amount) < 0.001)
-          )
-        ORDER BY t.timestamp DESC
-        LIMIT :limit
-        """
-    )
-    suspend fun searchTransactions(
-        normalizedQuery: String,
-        amount: Double?,
-        direction: String?,
-        searchPhone: Int,
-        limit: Int
-    ): List<TransactionWithCustomer>
-
-    @Query(
-        """
-        SELECT DISTINCT t.*, c.displayName AS customerDisplayName
-        FROM transactions t
-        LEFT JOIN customers c ON c.id = t.customerId
-        LEFT JOIN customer_identifiers ci ON ci.customerId = c.id
         WHERE :normalizedQuery != ''
           AND (:direction IS NULL OR t.direction = :direction)
           AND (
@@ -222,9 +176,6 @@ interface TransactionDao {
     )
     fun getTransactionsForSender(normalizedSender: String): Flow<List<TransactionWithCustomer>>
 
-    @Query("SELECT * FROM customers WHERE id = :customerId LIMIT 1")
-    suspend fun getCustomer(customerId: Long): CustomerEntity?
-
     @Query("SELECT * FROM transactions ORDER BY id ASC")
     suspend fun getAllTransactions(): List<TransactionEntity>
 
@@ -233,9 +184,6 @@ interface TransactionDao {
 
     @Query("SELECT * FROM customer_identifiers ORDER BY id ASC")
     suspend fun getAllIdentifiers(): List<CustomerIdentifierEntity>
-
-    @Query("SELECT * FROM customers WHERE lower(displayName) = :normalizedName LIMIT 1")
-    suspend fun getCustomerByNormalizedName(normalizedName: String): CustomerEntity?
 
     @Query(
         """
@@ -251,17 +199,11 @@ interface TransactionDao {
     )
     suspend fun searchCustomers(query: String): List<CustomerEntity>
 
-    @Query("SELECT * FROM customer_identifiers WHERE customerId = :customerId ORDER BY createdAt ASC")
-    fun getIdentifiersForCustomer(customerId: Long): Flow<List<CustomerIdentifierEntity>>
-
     @Query("SELECT * FROM customer_identifiers WHERE type = :type AND normalizedValue = :normalizedValue LIMIT 1")
     suspend fun findIdentifier(type: String, normalizedValue: String): CustomerIdentifierEntity?
 
     @Query("UPDATE customers SET displayName = :displayName, updatedAt = :updatedAt WHERE id = :customerId")
     suspend fun updateCustomerName(customerId: Long, displayName: String, updatedAt: Long)
-
-    @Query("DELETE FROM customer_identifiers WHERE id = :identifierId")
-    suspend fun deleteIdentifier(identifierId: Long)
 
     @Query("DELETE FROM customer_identifiers WHERE customerId = :customerId AND normalizedValue = :normalizedSender")
     suspend fun deleteIdentifierByCustomerAndValue(customerId: Long, normalizedSender: String)

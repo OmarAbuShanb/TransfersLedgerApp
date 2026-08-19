@@ -74,30 +74,30 @@ class MainHeaderAdapter(
                 card = binding.palpayCard,
                 title = context.getString(R.string.palpay_label),
                 stats = state.stats.palpay,
-                backgroundColor = context.getColor(R.color.primary_soft),
-                titleColor = context.getColor(R.color.primary),
-                incomingColor = context.getColor(R.color.jawwal_green),
-                outgoingColor = context.getColor(R.color.outgoing)
+                backgroundColor = context.getColor(R.color.palpay_card_bg),
+                titleColor = context.getColor(android.R.color.white),
+                incomingColor = context.getColor(android.R.color.white),
+                outgoingColor = context.getColor(android.R.color.white)
             )
             bindStat(
                 context = context,
                 card = binding.jawwalCard,
                 title = context.getString(R.string.jawwalpay_label),
                 stats = state.stats.jawwalPay,
-                backgroundColor = context.getColor(R.color.jawwal_soft),
-                titleColor = context.getColor(R.color.jawwal_green),
-                incomingColor = context.getColor(R.color.jawwal_green),
-                outgoingColor = context.getColor(R.color.outgoing)
+                backgroundColor = context.getColor(R.color.jawwal_card_bg),
+                titleColor = context.getColor(android.R.color.white),
+                incomingColor = context.getColor(android.R.color.white),
+                outgoingColor = context.getColor(android.R.color.white)
             )
             bindStat(
                 context = context,
                 card = binding.bopCard,
                 title = context.getString(R.string.bop_label),
                 stats = state.stats.bankOfPalestine,
-                backgroundColor = context.getColor(R.color.bop_soft),
-                titleColor = context.getColor(R.color.bop_blue),
-                incomingColor = context.getColor(R.color.jawwal_green),
-                outgoingColor = context.getColor(R.color.outgoing)
+                backgroundColor = context.getColor(R.color.bop_card_bg),
+                titleColor = context.getColor(android.R.color.white),
+                incomingColor = context.getColor(android.R.color.white),
+                outgoingColor = context.getColor(android.R.color.white)
             )
         }
 
@@ -135,7 +135,9 @@ class MainHeaderAdapter(
         backgroundColor: Int,
         titleColor: Int,
         incomingColor: Int,
-        outgoingColor: Int
+        outgoingColor: Int,
+        incomingLabelColor: Int = incomingColor,
+        outgoingLabelColor: Int = outgoingColor
     ) {
         card.root.background = GradientDrawable().apply {
             cornerRadius = context.resources.displayMetrics.density * 14
@@ -143,12 +145,13 @@ class MainHeaderAdapter(
         }
         card.cardTitle.text = title
         card.cardTitle.setTextColor(titleColor)
-        card.incomingAmount.setTextColor(incomingColor)
-        card.outgoingAmount.setTextColor(outgoingColor)
-
-        // Set labels for incoming and outgoing
         card.incomingLabel.text = context.getString(R.string.incoming_label)
         card.outgoingLabel.text = context.getString(R.string.outgoing_label)
+
+        card.incomingLabel.setTextColor(incomingLabelColor)
+        card.outgoingLabel.setTextColor(outgoingLabelColor)
+        card.incomingAmount.setTextColor(incomingColor)
+        card.outgoingAmount.setTextColor(outgoingColor)
 
         // Format amounts
         val symbol = context.getString(R.string.currency_symbol)

@@ -1,4 +1,4 @@
-package dev.anonymous.transfers_ledger
+package dev.anonymous.transfers_ledger.ui.screens
 
 import android.content.Intent
 import android.net.Uri
@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.Menu
 import android.view.MenuItem
+import dev.anonymous.transfers_ledger.R
+import dev.anonymous.transfers_ledger.app.TransfersLedgerApplication
 import dev.anonymous.transfers_ledger.core.IntentUtils
 import dev.anonymous.transfers_ledger.core.backup.BackupCodec
 import dev.anonymous.transfers_ledger.databinding.ActivitySettingsBinding
@@ -31,6 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import dev.anonymous.transfers_ledger.ui.viewmodel.MainViewModel
+import androidx.core.net.toUri
 
 class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
@@ -60,13 +63,17 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(IntentUtils.getNotificationListenerSettingsIntent(this))
         }
         binding.batterySettingsButton.setOnClickListener {
-            startActivity(IntentUtils.getBatteryOptimizationIntent(this))
+            startActivity(IntentUtils.getBatteryOptimizationIntent())
         }
         binding.overflowButton.setOnClickListener { v ->
             dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.show(
                 this,
                 v,
                 listOf(
+                    dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.Action(
+                        title = getString(R.string.privacy_policy_title),
+                        onClick = { AppDialogs.showPrivacyPolicy(supportFragmentManager, isCancelable = true) }
+                    ),
                     dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.Action(
                         title = getString(R.string.overview_title),
                         onClick = { showOverviewDialog() }
@@ -76,7 +83,7 @@ class SettingsActivity : AppCompatActivity() {
                         onClick = {
                             val deviceHash = dev.anonymous.transfers_ledger.license.DeviceIdProvider.getHashedId(this@SettingsActivity)
                             val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                             try {
                                 startActivity(intent)
                             } catch (e: Exception) {
@@ -84,8 +91,12 @@ class SettingsActivity : AppCompatActivity() {
                             }
                         }
                     )
-                )
+                ),
+                tag = POPUP_OVERFLOW
             )
+        }
+        binding.userGuideButton.setOnClickListener {
+            openUserGuide()
         }
         binding.autostartSettingsButton.setOnClickListener {
             openAutoStartSettings()
@@ -98,7 +109,7 @@ class SettingsActivity : AppCompatActivity() {
             createBackupLauncher.launch(backupFileName())
         }
         binding.restoreBackupButton.setOnClickListener {
-            if (requireActivation()) return@setOnClickListener
+//            if (requireActivation()) return@setOnClickListener
             restoreBackupLauncher.launch(arrayOf("application/octet-stream", "*/*"))
         }
         trackingSwitch.setOnCheckedChangeListener { _, checked ->
@@ -144,6 +155,12 @@ class SettingsActivity : AppCompatActivity() {
                         binding.jawwalPayModeGroup.setOnCheckedChangeListener(modeChangeListener)
                     }
                 }
+            }
+        }
+
+        if (savedInstanceState?.getString(KEY_ACTIVE_POPUP) == POPUP_OVERFLOW) {
+            binding.overflowButton.post {
+                binding.overflowButton.performClick()
             }
         }
     }
@@ -220,7 +237,7 @@ class SettingsActivity : AppCompatActivity() {
             else -> ""
         }
         val url = if (targetPath.isNotEmpty()) "https://dontkillmyapp.com/$targetPath" else "https://dontkillmyapp.com/"
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         runCatching {
             startActivity(intent)
         }
@@ -246,7 +263,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun confirmRestore(uri: Uri) {
         AppDialogs.showConfirmation(
-            context = this,
+            fragmentManager = supportFragmentManager,
             title = getString(R.string.restore_warning_title),
             message = getString(R.string.restore_warning_message),
             positiveText = getString(R.string.restore_backup)
@@ -277,6 +294,13 @@ class SettingsActivity : AppCompatActivity() {
         return "palpay-tracker-${SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())}.bdb"
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.activeTag?.let {
+            outState.putString(KEY_ACTIVE_POPUP, it)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         viewModel.refreshSystemStatus()
@@ -298,7 +322,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showOverviewDialog() {
-        AppDialogs.showOverview(this)
+        AppDialogs.showOverview(supportFragmentManager)
+    }
+
+    private fun openUserGuide() {
+        startActivity(Intent(this, UserGuideActivity::class.java))
     }
 
     /**
@@ -311,20 +339,20 @@ class SettingsActivity : AppCompatActivity() {
         if (lm.isActivated) return false
 
         AppDialogs.showFeatureNotAvailableDialog(
-            context = this,
+            fragmentManager = supportFragmentManager,
             onActivateClick = {
                 val deviceHash = dev.anonymous.transfers_ledger.license.DeviceIdProvider.getHashedId(this)
                 AppDialogs.showActivationDialog(
-                    context = this,
+                    fragmentManager = supportFragmentManager,
                     deviceIdHash = deviceHash,
                     message = getString(R.string.license_activate_manual_message),
                     isCancelable = true,
                     onWhatsappClick = {
                         val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                         try {
                             startActivity(intent)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             Snackbar.make(binding.root, "واتساب غير مثبت", Snackbar.LENGTH_LONG).show()
                         }
                     },
@@ -353,5 +381,15 @@ class SettingsActivity : AppCompatActivity() {
         } else {
             stopService(serviceIntent)
         }
+    }
+
+    override fun onDestroy() {
+        dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.dismissAll()
+        super.onDestroy()
+    }
+
+    companion object {
+        private const val KEY_ACTIVE_POPUP = "active_popup_tag"
+        private const val POPUP_OVERFLOW = "overflow"
     }
 }

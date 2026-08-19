@@ -193,7 +193,6 @@ class MainActivity : AppCompatActivity() {
             keyFactory.generatePrivate(keySpec) // throws if invalid
 
             // Regenerate the public key from the private key
-            val privateKey = keyFactory.generatePrivate(keySpec) as java.security.interfaces.ECPrivateKey
             val keyPairGen = KeyPairGenerator.getInstance("EC")
             keyPairGen.initialize(ECGenParameterSpec("secp256r1"))
 

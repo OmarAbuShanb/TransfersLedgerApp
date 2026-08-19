@@ -4,7 +4,6 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/app_bg"
     android:layoutDirection="rtl">
 
     <LinearLayout
@@ -35,9 +34,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/bg_icon_button"
-                android:clipToOutline="true"
-                android:foreground="?attr/selectableItemBackground"
+                android:background="@drawable/ripple_icon_button"
                 android:gravity="center"
                 android:paddingHorizontal="14dp"
                 android:text="انقر للتفعيل"
@@ -51,10 +48,8 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/bg_icon_button"
-                android:clipToOutline="true"
+                android:background="@drawable/ripple_icon_button"
                 android:contentDescription="@string/export"
-                android:foreground="?attr/selectableItemBackground"
                 android:padding="10dp"
                 android:src="@drawable/ic_excel_24"
                 app:tint="@color/text_primary" />
@@ -64,10 +59,8 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/bg_icon_button"
-                android:clipToOutline="true"
+                android:background="@drawable/ripple_icon_button"
                 android:contentDescription="@string/customers_title"
-                android:foreground="?attr/selectableItemBackground"
                 android:padding="10dp"
                 android:src="@drawable/ic_customers_24"
                 app:tint="@color/text_primary" />
@@ -77,10 +70,8 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/bg_icon_button"
-                android:clipToOutline="true"
+                android:background="@drawable/ripple_icon_button"
                 android:contentDescription="@string/settings_title"
-                android:foreground="?attr/selectableItemBackground"
                 android:padding="10dp"
                 android:src="@drawable/ic_settings_24"
                 app:tint="@color/text_primary" />

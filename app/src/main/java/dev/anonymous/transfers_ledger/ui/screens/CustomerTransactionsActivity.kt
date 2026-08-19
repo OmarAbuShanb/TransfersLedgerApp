@@ -1,12 +1,14 @@
-package dev.anonymous.transfers_ledger
+package dev.anonymous.transfers_ledger.ui.screens
 
 import android.os.Bundle
 import android.view.View
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import dev.anonymous.transfers_ledger.R
+import dev.anonymous.transfers_ledger.app.TransfersLedgerApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -24,12 +26,14 @@ import dev.anonymous.transfers_ledger.ui.adapters.TransactionListAdapter
 import dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu
 import dev.anonymous.transfers_ledger.ui.common.AppDialogs
 
-class CustomerTransactionsActivity : ComponentActivity() {
+class CustomerTransactionsActivity : FragmentActivity() {
     private lateinit var binding: ActivityCustomerTransactionsBinding
     private lateinit var adapter: TransactionListAdapter
     private lateinit var accountsAdapter: CustomerAccountAdapter
     private val repository by lazy { (application as TransfersLedgerApplication).repository }
     private var sender: String = ""
+    private var pendingPopupTag: String? = null
+    private var pendingTransactionId: Long = -1L
 
     // Reactive customer ID. Initialized from the Intent extra. When the user creates
     // a customer while viewing sender-only transactions, we update this flow and the
@@ -79,7 +83,15 @@ class CustomerTransactionsActivity : ComponentActivity() {
                     .map { items -> items to TransactionStatsCalculator.calculate(items.map { it.transaction }) }
                     .collect { (items, stats) ->
                         val customerId = customerIdFlow.value
-                        adapter.submitList(items)
+                        adapter.submitList(items) {
+                            if (pendingPopupTag == POPUP_TRANSACTION && pendingTransactionId > 0L) {
+                                val index = items.indexOfFirst { it.transaction.id == pendingTransactionId }
+                                if (index >= 0) {
+                                    val item = items[index]
+                                    tryRestoreTransactionMenu(index, item)
+                                }
+                            }
+                        }
                         accountsAdapter.submitList(buildAccounts(items))
                         val showAccounts = customerId > 0L && items.isNotEmpty()
                         binding.accountsTitle.visibility = if (showAccounts) View.VISIBLE else View.GONE
@@ -88,6 +100,9 @@ class CustomerTransactionsActivity : ComponentActivity() {
                     }
             }
         }
+
+        pendingPopupTag = savedInstanceState?.getString(KEY_ACTIVE_POPUP)
+        pendingTransactionId = savedInstanceState?.getLong(KEY_POPUP_TRANSACTION_ID, -1L) ?: -1L
     }
 
     private fun updateHeaderButtons(customerId: Long) {
@@ -115,7 +130,7 @@ class CustomerTransactionsActivity : ComponentActivity() {
         if (customerId <= 0L) return
         val isLastAccount = accountsAdapter.currentList.size <= 1
         AppDialogs.showConfirmation(
-            context = this,
+            fragmentManager = supportFragmentManager,
             title = getString(if (isLastAccount) R.string.confirm_delete_customer_title else R.string.confirm_unlink_title),
             message = if (isLastAccount) {
                 getString(R.string.confirm_delete_customer_message)
@@ -138,24 +153,31 @@ class CustomerTransactionsActivity : ComponentActivity() {
     private fun bindStat(card: ViewStatCardBinding, title: String, stats: WalletStats) {
         val locale = TimeUtils.getLocale(resources.configuration)
         card.cardTitle.text = title
+        card.cardTitle.setTextColor(getColor(R.color.text_primary))
 
         // Set labels
         card.incomingLabel.text = getString(R.string.incoming_label)
         card.outgoingLabel.text = getString(R.string.outgoing_label)
 
-        // Set amounts and colors
+        val greenColor = getColor(R.color.jawwal_green)
+        val redColor = getColor(R.color.outgoing)
+
+        card.incomingLabel.setTextColor(greenColor)
+        card.outgoingLabel.setTextColor(redColor)
+        card.incomingAmount.setTextColor(greenColor)
+        card.outgoingAmount.setTextColor(redColor)
+
+        // Set amounts
         val symbol = getString(R.string.currency_symbol)
         val incomingFormatted = TimeUtils.formatMoney(stats.incoming, locale)
         val outgoingFormatted = TimeUtils.formatMoney(stats.outgoing, locale)
 
         card.incomingAmount.text = "$incomingFormatted $symbol"
         card.outgoingAmount.text = "$outgoingFormatted $symbol"
-
-        card.incomingAmount.setTextColor(getColor(R.color.jawwal_green))
-        card.outgoingAmount.setTextColor(getColor(R.color.outgoing))
     }
 
     private fun showTransactionMenu(anchor: View, item: TransactionWithCustomer) {
+        pendingTransactionId = item.transaction.id
         val transaction = item.transaction
         val toggleTitle = if (transaction.direction == TransactionDirection.OUTGOING) R.string.mark_incoming else R.string.mark_outgoing
         AnimatedPopupMenu.show(
@@ -170,13 +192,40 @@ class CustomerTransactionsActivity : ComponentActivity() {
                     }
                     lifecycleScope.launch { repository.updateDirection(transaction.id, newDirection) }
                 }
-            )
+            ),
+            tag = POPUP_TRANSACTION,
+            onDismiss = { pendingTransactionId = -1L }
         )
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        AnimatedPopupMenu.activeTag?.let {
+            outState.putString(KEY_ACTIVE_POPUP, it)
+        }
+        if (pendingTransactionId > 0L || AnimatedPopupMenu.activeTag == POPUP_TRANSACTION) {
+            outState.putLong(KEY_POPUP_TRANSACTION_ID, pendingTransactionId)
+        }
+    }
+
+    private fun tryRestoreTransactionMenu(position: Int, item: TransactionWithCustomer, retriesLeft: Int = 6) {
+        binding.transactionsRecycler.post {
+            val holder = binding.transactionsRecycler.findViewHolderForAdapterPosition(position)
+            val anchor = holder?.itemView?.findViewById<View>(R.id.menuButton)
+            if (anchor != null) {
+                pendingPopupTag = null
+                showTransactionMenu(anchor, item)
+            } else if (retriesLeft > 0) {
+                binding.transactionsRecycler.postDelayed({
+                    tryRestoreTransactionMenu(position, item, retriesLeft - 1)
+                }, 60L)
+            }
+        }
     }
 
     private fun showCreateCustomerDialog() {
         AppDialogs.showTextInput(
-            context = this,
+            fragmentManager = supportFragmentManager,
             title = getString(R.string.create_customer),
             hint = binding.titleText.text.toString().ifBlank { getString(R.string.customer_name_hint) },
             initialValue = ""
@@ -197,7 +246,7 @@ class CustomerTransactionsActivity : ComponentActivity() {
 
     private fun showEditNameDialog() {
         AppDialogs.showTextInput(
-            context = this,
+            fragmentManager = supportFragmentManager,
             title = getString(R.string.customer_name_hint),
             hint = getString(R.string.customer_name_hint),
             initialValue = binding.titleText.text.toString()
@@ -209,9 +258,17 @@ class CustomerTransactionsActivity : ComponentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        AnimatedPopupMenu.dismissAll()
+        super.onDestroy()
+    }
+
     companion object {
         const val EXTRA_CUSTOMER_ID = "customer_id"
         const val EXTRA_SENDER = "sender"
         const val EXTRA_TITLE = "title"
+        private const val KEY_ACTIVE_POPUP = "active_popup_tag"
+        private const val POPUP_TRANSACTION = "transaction"
+        private const val KEY_POPUP_TRANSACTION_ID = "popup_transaction_id"
     }
 }

@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Centralized license gatekeeper.
@@ -32,7 +30,6 @@ class LicenseManager private constructor(private val context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _isActivated = MutableStateFlow(prefs.getBoolean(KEY_IS_ACTIVATED, false))
-    val isActivatedState: StateFlow<Boolean> = _isActivated.asStateFlow()
 
     val isActivated: Boolean
         get() = prefs.getBoolean(KEY_IS_ACTIVATED, false)
@@ -69,11 +66,11 @@ class LicenseManager private constructor(private val context: Context) {
             if (code != expectedCode) return false
             
             val format = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-            val expirationDate = format.parse("2026-03-06")
+            val expirationDate = format.parse("2026-08-19")
             if (expirationDate != null && System.currentTimeMillis() < expirationDate.time) {
                 return true
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Ignore
         }
         return false

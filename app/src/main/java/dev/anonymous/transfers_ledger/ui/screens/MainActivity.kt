@@ -1,11 +1,11 @@
-package dev.anonymous.transfers_ledger
+package dev.anonymous.transfers_ledger.ui.screens
 
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.View
-import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -13,11 +13,9 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import dev.anonymous.transfers_ledger.R
+import dev.anonymous.transfers_ledger.app.TransfersLedgerApplication
 import dev.anonymous.transfers_ledger.core.IntentUtils
-import dev.anonymous.transfers_ledger.license.LicenseManager
-import dev.anonymous.transfers_ledger.license.DeviceIdProvider
 import dev.anonymous.transfers_ledger.core.TimeUtils
 import dev.anonymous.transfers_ledger.core.export.ExcelExporter
 import dev.anonymous.transfers_ledger.data.local.db.TransactionEntity
@@ -28,15 +26,29 @@ import dev.anonymous.transfers_ledger.domain.model.DateRange
 import dev.anonymous.transfers_ledger.domain.model.SummaryPeriod
 import dev.anonymous.transfers_ledger.domain.model.TransactionDirection
 import dev.anonymous.transfers_ledger.domain.model.TransactionFilter
+import dev.anonymous.transfers_ledger.license.DeviceIdProvider
+import dev.anonymous.transfers_ledger.license.LicenseManager
 import dev.anonymous.transfers_ledger.service.TrackingForegroundService
 import dev.anonymous.transfers_ledger.ui.adapters.MainHeaderAdapter
+import dev.anonymous.transfers_ledger.ui.adapters.EmptyStateAdapter
 import dev.anonymous.transfers_ledger.ui.adapters.TransactionPagingAdapter
 import dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu
 import dev.anonymous.transfers_ledger.ui.common.AppDialogs
-import dev.anonymous.transfers_ledger.ui.common.DateRangeDialog
 import dev.anonymous.transfers_ledger.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import androidx.core.content.edit
+import androidx.core.net.toUri
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
+
+    companion object {
+        private const val KEY_ACTIVE_POPUP = "active_popup_tag"
+        private const val POPUP_SUMMARY_PERIOD = "summary_period"
+        private const val POPUP_LIST_FILTER = "list_filter"
+        private const val POPUP_TRANSACTION = "transaction"
+        private const val KEY_POPUP_TRANSACTION_ID = "popup_transaction_id"
+    }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var headerAdapter: MainHeaderAdapter
@@ -47,6 +59,8 @@ class MainActivity : ComponentActivity() {
         MainViewModel.Factory(application, repository)
     }
     private var lastTrackingEnabled: Boolean? = null
+    private var pendingPopupTag: String? = null
+    private var pendingTransactionId: Long = -1L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +70,7 @@ class MainActivity : ComponentActivity() {
         val locale = TimeUtils.getLocale(resources.configuration)
         headerAdapter = MainHeaderAdapter(
             locale = locale,
-            onBatteryClick = { startActivity(IntentUtils.getBatteryOptimizationIntent(this)) },
+            onBatteryClick = { startActivity(IntentUtils.getBatteryOptimizationIntent()) },
             onPermissionClick = {
                 startActivity(
                     IntentUtils.getNotificationListenerSettingsIntent(
@@ -115,13 +129,24 @@ class MainActivity : ComponentActivity() {
         }
         binding.exportButton.setOnClickListener { explainAndExport() }
 
-        // Show overview dialog on first launch of the app in MainActivity
+        // First launch flow: Privacy Policy -> Overview
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        if (!prefs.getBoolean("overview_shown", false)) {
+        val privacyAccepted = prefs.getBoolean("privacy_policy_accepted", false)
+        if (!privacyAccepted) {
             binding.root.post {
-                AppDialogs.showOverview(this)
+                AppDialogs.showPrivacyPolicy(supportFragmentManager) {
+                    prefs.edit {
+                        putBoolean("privacy_policy_accepted", true)
+                            .putBoolean("overview_shown", true)
+                    }
+                    AppDialogs.showOverview(supportFragmentManager)
+                }
             }
-            prefs.edit().putBoolean("overview_shown", true).apply()
+        } else if (!prefs.getBoolean("overview_shown", false)) {
+            binding.root.post {
+                AppDialogs.showOverview(supportFragmentManager)
+            }
+            prefs.edit {putBoolean("overview_shown", true)}
         }
 
         lifecycleScope.launch {
@@ -130,18 +155,113 @@ class MainActivity : ComponentActivity() {
                 launch { viewModel.pagedTransactions.collectLatest { adapter.submitData(it) } }
             }
         }
+
+        // Restore popup menu that was open before configuration change (theme toggle)
+        pendingPopupTag = savedInstanceState?.getString(KEY_ACTIVE_POPUP)
+        pendingTransactionId = savedInstanceState?.getLong(KEY_POPUP_TRANSACTION_ID, -1L) ?: -1L
+        if (pendingPopupTag != null) {
+            binding.transactionsRecycler.post {
+                restorePopupMenu()
+            }
+        }
     }
-    
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        AnimatedPopupMenu.activeTag?.let {
+            outState.putString(KEY_ACTIVE_POPUP, it)
+        }
+        if (pendingTransactionId > 0L || AnimatedPopupMenu.activeTag == POPUP_TRANSACTION) {
+            outState.putLong(KEY_POPUP_TRANSACTION_ID, pendingTransactionId)
+        }
+    }
+
+    private fun restorePopupMenu() {
+        val tag = pendingPopupTag ?: return
+        when (tag) {
+            POPUP_SUMMARY_PERIOD, POPUP_LIST_FILTER -> {
+                tryRestoreHeaderMenu(tag)
+            }
+
+            POPUP_TRANSACTION -> {
+                if (pendingTransactionId <= 0L) return
+                val snapshot = adapter.snapshot()
+                val existingIndex =
+                    snapshot.items.indexOfFirst { it?.transaction?.id == pendingTransactionId }
+                if (existingIndex >= 0) {
+                    val item = snapshot.items[existingIndex] ?: return
+                    tryRestoreTransactionMenu(existingIndex + 1, item)
+                } else {
+                    val listener = object : Function0<Unit> {
+                        override fun invoke() {
+                            val currentSnapshot = adapter.snapshot()
+                            val index =
+                                currentSnapshot.items.indexOfFirst { it?.transaction?.id == pendingTransactionId }
+                            if (index < 0) return
+                            adapter.removeOnPagesUpdatedListener(this)
+                            val item = currentSnapshot.items[index] ?: return
+                            tryRestoreTransactionMenu(index + 1, item)
+                        }
+                    }
+                    adapter.addOnPagesUpdatedListener(listener)
+                }
+            }
+        }
+    }
+
+    private fun tryRestoreHeaderMenu(tag: String, retriesLeft: Int = 8) {
+        binding.transactionsRecycler.post {
+            val headerHolder =
+                binding.transactionsRecycler.findViewHolderForAdapterPosition(0)?.itemView
+            val anchorId =
+                if (tag == POPUP_SUMMARY_PERIOD) R.id.summaryPeriodButton else R.id.listFilterButton
+            val anchor = headerHolder?.findViewById<View>(anchorId)
+            if (anchor != null) {
+                pendingPopupTag = null
+                if (tag == POPUP_SUMMARY_PERIOD) {
+                    showSummaryPeriodMenu(anchor)
+                } else {
+                    showListFilterMenu(anchor)
+                }
+            } else if (retriesLeft > 0) {
+                binding.transactionsRecycler.postDelayed({
+                    tryRestoreHeaderMenu(tag, retriesLeft - 1)
+                }, 50L)
+            }
+        }
+    }
+
+    private fun tryRestoreTransactionMenu(
+        adapterPosition: Int,
+        item: TransactionWithCustomer,
+        retriesLeft: Int = 8
+    ) {
+        binding.transactionsRecycler.post {
+            binding.transactionsRecycler.scrollToPosition(adapterPosition)
+            val holder =
+                binding.transactionsRecycler.findViewHolderForAdapterPosition(adapterPosition)
+            val anchor = holder?.itemView?.findViewById<View>(R.id.menuButton)
+            if (anchor != null) {
+                pendingPopupTag = null
+                showTransactionMenu(anchor, item)
+            } else if (retriesLeft > 0) {
+                binding.transactionsRecycler.postDelayed({
+                    tryRestoreTransactionMenu(adapterPosition, item, retriesLeft - 1)
+                }, 50L)
+            }
+        }
+    }
+
     private fun checkLicenseLimit() {
         val lm = LicenseManager.getInstance(this)
         if (lm.isActivated) {
-            binding.activateButton.visibility = android.view.View.GONE
+            binding.activateButton.visibility = View.GONE
             return
         }
-        
-        binding.activateButton.visibility = android.view.View.VISIBLE
+
+        binding.activateButton.visibility = View.VISIBLE
         binding.activateButton.setOnClickListener { showActivationDialog(isManual = true) }
-        
+
         lifecycleScope.launch {
             val count = repository.getTotalTransactionCount()
             if (count >= 100) {
@@ -149,24 +269,24 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    
+
     private fun showActivationDialog(isManual: Boolean) {
         val deviceHash = DeviceIdProvider.getHashedId(this)
-        
+
         val message = if (isManual) {
             getString(R.string.license_activate_manual_message)
         } else {
             getString(R.string.license_activate_message)
         }
-        
+
         AppDialogs.showActivationDialog(
-            context = this,
+            fragmentManager = supportFragmentManager,
             deviceIdHash = deviceHash,
             message = message,
             isCancelable = isManual,
             onWhatsappClick = {
                 val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
-                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                 try {
                     startActivity(intent)
                 } catch (e: Exception) {
@@ -176,7 +296,11 @@ class MainActivity : ComponentActivity() {
             onActivate = { code ->
                 val lm = LicenseManager.getInstance(this)
                 if (lm.activate(code)) {
-                    Snackbar.make(binding.root, R.string.license_activate_success, Snackbar.LENGTH_LONG).show()
+                    Snackbar.make(
+                        binding.root,
+                        R.string.license_activate_success,
+                        Snackbar.LENGTH_LONG
+                    ).show()
                     checkLicenseLimit()
                     true
                 } else {
@@ -184,6 +308,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
+    }
+
+    override fun onDestroy() {
+        AnimatedPopupMenu.dismissAll()
+        super.onDestroy()
     }
 
     override fun onResume() {
@@ -263,7 +392,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            )
+            ),
+            tag = POPUP_SUMMARY_PERIOD
         )
     }
 
@@ -315,11 +445,13 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            )
+            ),
+            tag = POPUP_LIST_FILTER
         )
     }
 
     private fun showTransactionMenu(anchor: View, item: TransactionWithCustomer) {
+        pendingTransactionId = item.transaction.id
         val transaction = item.transaction
         val toggleTitle =
             if (transaction.direction == TransactionDirection.OUTGOING) R.string.mark_incoming else R.string.mark_outgoing
@@ -346,7 +478,9 @@ class MainActivity : ComponentActivity() {
                         showCreateCustomerDialog(transaction)
                     })
                 }
-            }
+            },
+            tag = POPUP_TRANSACTION,
+            onDismiss = { pendingTransactionId = -1L }
         )
     }
 
@@ -364,7 +498,7 @@ class MainActivity : ComponentActivity() {
 
     private fun showCreateCustomerDialog(transaction: TransactionEntity) {
         AppDialogs.showTextInput(
-            context = this,
+            fragmentManager = supportFragmentManager,
             title = getString(R.string.create_customer),
             hint = transaction.senderName.ifBlank { getString(R.string.customer_name_hint) },
             initialValue = ""
@@ -379,8 +513,7 @@ class MainActivity : ComponentActivity() {
 
     private fun showLinkCustomerSheet(transaction: TransactionEntity) {
         AppDialogs.showCustomerLinkSheet(
-            context = this,
-            lifecycleScope = lifecycleScope,
+            fragmentManager = supportFragmentManager,
             searchCustomers = viewModel::searchCustomers
         ) { customer ->
             viewModel.linkTransactionToCustomer(transaction, customer.id)
@@ -392,7 +525,7 @@ class MainActivity : ComponentActivity() {
             if (repository.isExportNoticeShown()) {
                 showExportDateDialog()
             } else {
-                AppDialogs.showExportNotice(this@MainActivity) {
+                AppDialogs.showExportNotice(supportFragmentManager) {
                     lifecycleScope.launch {
                         repository.setExportNoticeShown(true)
                         showExportDateDialog()
@@ -452,8 +585,8 @@ class MainActivity : ComponentActivity() {
                 Snackbar.make(binding.root, R.string.no_transactions, Snackbar.LENGTH_LONG).show()
                 return@launch
             }
-            DateRangeDialog(
-                context = this@MainActivity,
+            AppDialogs.showDateDialog(
+                fragmentManager = supportFragmentManager,
                 title = title,
                 actionText = actionText,
                 buildDayRange = viewModel::customDayRange,
@@ -461,35 +594,8 @@ class MainActivity : ComponentActivity() {
                 minDate = first,
                 maxDate = last,
                 onApply = onApply
-            ).show()
+            )
         }
     }
 }
 
-class EmptyStateAdapter(private val message: String) :
-    RecyclerView.Adapter<EmptyStateAdapter.ViewHolder>() {
-    private var visible: Boolean = false
-
-    fun updateVisible(isVisible: Boolean) {
-        if (visible != isVisible) {
-            visible = isVisible
-            notifyDataSetChanged()
-        }
-    }
-
-    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
-        val view = android.view.LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_empty_state, parent, false)
-        return ViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.textView.text = message
-    }
-
-    override fun getItemCount(): Int = if (visible) 1 else 0
-
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val textView: android.widget.TextView = view.findViewById(R.id.emptyText)
-    }
-}

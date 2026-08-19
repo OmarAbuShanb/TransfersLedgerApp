@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
+import androidx.core.view.doOnNextLayout
 
 /**
  * Animates a sliding indicator view to sit behind the selected segment button.
@@ -84,18 +85,33 @@ object SegmentedControlAnimator {
             params.width = targetWidth
             paramsChanged = true
         }
-        if (paramsChanged) {
-            indicator.layoutParams = params
-        }
 
         indicator.animate().cancel()
-        if (animate && indicator.isLaidOut && indicator.width > 0) {
+
+        if (animate && !paramsChanged && indicator.isLaidOut && indicator.width > 0) {
+            // Width hasn't changed: animate directly to the target x.
             indicator.animate()
                 .x(targetX)
                 .setDuration(200L)
                 .setInterpolator(DecelerateInterpolator())
                 .start()
+        } else if (animate && paramsChanged) {
+            // Width is changing (requestLayout will be triggered). Capture the current x
+            // before applying the new params, then wait for the next layout pass and
+            // slide from the old position to the new one.
+            val fromX = indicator.x
+            indicator.layoutParams = params
+            indicator.doOnNextLayout {
+                indicator.x = fromX
+                indicator.animate()
+                    .x(targetX)
+                    .setDuration(200L)
+                    .setInterpolator(DecelerateInterpolator())
+                    .start()
+            }
         } else {
+            // Snap: apply params (if changed) then position immediately.
+            if (paramsChanged) indicator.layoutParams = params
             indicator.x = targetX
         }
     }
@@ -106,7 +122,7 @@ object SegmentedControlAnimator {
         while (current != null && current != container) {
             left += current.left.toFloat()
             val parent = current.parent
-            current = if (parent is View) parent else null
+            current = parent as? View
         }
         return left
     }

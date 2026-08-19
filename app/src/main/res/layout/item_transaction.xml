@@ -22,9 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:background="@drawable/bg_card_stroked"
-        android:clipToOutline="true"
-        android:foreground="?attr/selectableItemBackground"
+        android:background="@drawable/ripple_card_stroked"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="12dp">
@@ -103,10 +101,8 @@
             android:id="@+id/menuButton"
             android:layout_width="38dp"
             android:layout_height="38dp"
-            android:background="@drawable/bg_icon_button"
-            android:clipToOutline="true"
+            android:background="@drawable/ripple_icon_button"
             android:contentDescription="@string/edit"
-            android:foreground="?attr/selectableItemBackground"
             android:padding="7dp"
             android:src="@drawable/ic_more_vert_24"
             app:tint="@color/text_primary" />

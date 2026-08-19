@@ -1,4 +1,4 @@
-package dev.anonymous.transfers_ledger
+package dev.anonymous.transfers_ledger.ui.screens
 
 import android.content.Intent
 import android.content.res.Configuration
@@ -8,13 +8,15 @@ import android.text.TextWatcher
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.viewModels
 import androidx.core.content.getSystemService
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
+import dev.anonymous.transfers_ledger.R
+import dev.anonymous.transfers_ledger.app.TransfersLedgerApplication
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -30,8 +32,15 @@ import dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu
 import dev.anonymous.transfers_ledger.ui.common.AppDialogs
 import dev.anonymous.transfers_ledger.ui.common.SegmentedControlAnimator
 import dev.anonymous.transfers_ledger.ui.viewmodel.MainViewModel
+import kotlin.time.Duration.Companion.milliseconds
 
-class SearchActivity : ComponentActivity() {
+class SearchActivity : FragmentActivity() {
+    companion object {
+        private const val KEY_ACTIVE_POPUP = "active_popup_tag"
+        private const val POPUP_TRANSACTION = "transaction"
+        private const val KEY_POPUP_TRANSACTION_ID = "popup_transaction_id"
+    }
+
     private lateinit var binding: ActivitySearchBinding
     private lateinit var adapter: TransactionPagingAdapter
     private val repository by lazy { (application as TransfersLedgerApplication).repository }
@@ -41,6 +50,8 @@ class SearchActivity : ComponentActivity() {
     private var filter = TransactionFilter.ALL
     private var searchJob: Job? = null
     private var lastQuery = ""
+    private var pendingPopupTag: String? = null
+    private var pendingTransactionId: Long = -1L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +97,65 @@ class SearchActivity : ComponentActivity() {
         }, 240L)
         updateFilterUi()
         runSearch()
+
+        pendingPopupTag = savedInstanceState?.getString(KEY_ACTIVE_POPUP)
+        pendingTransactionId = savedInstanceState?.getLong(KEY_POPUP_TRANSACTION_ID, -1L) ?: -1L
+        if (pendingPopupTag == POPUP_TRANSACTION && pendingTransactionId > 0L) {
+            restorePopupMenu()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        AnimatedPopupMenu.activeTag?.let {
+            outState.putString(KEY_ACTIVE_POPUP, it)
+        }
+        if (pendingTransactionId > 0L || AnimatedPopupMenu.activeTag == POPUP_TRANSACTION) {
+            outState.putLong(KEY_POPUP_TRANSACTION_ID, pendingTransactionId)
+        }
+    }
+
+    private fun restorePopupMenu() {
+        val tag = pendingPopupTag ?: return
+        when (tag) {
+            POPUP_TRANSACTION -> {
+                if (pendingTransactionId <= 0L) return
+                val snapshot = adapter.snapshot()
+                val existingIndex = snapshot.items.indexOfFirst { it.transaction.id == pendingTransactionId }
+                if (existingIndex >= 0) {
+                    val item = snapshot.items[existingIndex]
+                    tryRestoreTransactionMenu(existingIndex, item)
+                } else {
+                    val listener = object : Function0<Unit> {
+                        override fun invoke() {
+                            val currentSnapshot = adapter.snapshot()
+                            val index = currentSnapshot.items.indexOfFirst { it.transaction.id == pendingTransactionId }
+                            if (index < 0) return
+                            adapter.removeOnPagesUpdatedListener(this)
+                            val item = currentSnapshot.items[index]
+                            tryRestoreTransactionMenu(index, item)
+                        }
+                    }
+                    adapter.addOnPagesUpdatedListener(listener)
+                }
+            }
+        }
+    }
+
+    private fun tryRestoreTransactionMenu(position: Int, item: TransactionWithCustomer, retriesLeft: Int = 8) {
+        binding.resultsRecycler.post {
+            binding.resultsRecycler.scrollToPosition(position)
+            val holder = binding.resultsRecycler.findViewHolderForAdapterPosition(position)
+            val anchor = holder?.itemView?.findViewById<View>(R.id.menuButton)
+            if (anchor != null) {
+                pendingPopupTag = null
+                showTransactionMenu(anchor, item)
+            } else if (retriesLeft > 0) {
+                binding.resultsRecycler.postDelayed({
+                    tryRestoreTransactionMenu(position, item, retriesLeft - 1)
+                }, 50L)
+            }
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -125,7 +195,7 @@ class SearchActivity : ComponentActivity() {
         searchJob?.cancel()
         lastQuery = binding.searchInput.text.toString().trim()
         searchJob = lifecycleScope.launch {
-            delay(250)
+            delay(250.milliseconds)
             if (lastQuery.isBlank()) {
                 adapter.submitData(PagingData.empty())
                 showEmptyState(getString(R.string.search_empty_prompt))
@@ -151,6 +221,7 @@ class SearchActivity : ComponentActivity() {
     }
 
     private fun showTransactionMenu(anchor: View, item: TransactionWithCustomer) {
+        pendingTransactionId = item.transaction.id
         val transaction = item.transaction
         val toggleTitle = if (transaction.direction == TransactionDirection.OUTGOING) R.string.mark_incoming else R.string.mark_outgoing
         AnimatedPopupMenu.show(
@@ -173,7 +244,9 @@ class SearchActivity : ComponentActivity() {
                         showCreateCustomerDialog(transaction)
                     })
                 }
-            }
+            },
+            tag = POPUP_TRANSACTION,
+            onDismiss = { pendingTransactionId = -1L }
         )
     }
 
@@ -187,7 +260,7 @@ class SearchActivity : ComponentActivity() {
 
     private fun showCreateCustomerDialog(transaction: TransactionEntity) {
         AppDialogs.showTextInput(
-            context = this,
+            fragmentManager = supportFragmentManager,
             title = getString(R.string.create_customer),
             hint = transaction.senderName.ifBlank { getString(R.string.customer_name_hint) },
             initialValue = ""
@@ -200,13 +273,17 @@ class SearchActivity : ComponentActivity() {
 
     private fun showLinkCustomerSheet(transaction: TransactionEntity) {
         AppDialogs.showCustomerLinkSheet(
-            context = this,
-            lifecycleScope = lifecycleScope,
+            fragmentManager = supportFragmentManager,
             searchCustomers = viewModel::searchCustomers
         ) { customer ->
             viewModel.linkTransactionToCustomer(transaction, customer.id) {
                 adapter.refresh()
             }
         }
+    }
+
+    override fun onDestroy() {
+        AnimatedPopupMenu.dismissAll()
+        super.onDestroy()
     }
 }

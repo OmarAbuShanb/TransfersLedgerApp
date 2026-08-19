@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layoutDirection="rtl"
-    android:background="@color/app_bg"
     android:orientation="vertical"
     android:paddingStart="16dp"
     android:paddingTop="16dp"
@@ -21,10 +20,8 @@
             android:id="@+id/backButton"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:background="@drawable/bg_icon_button"
-            android:clipToOutline="true"
+            android:background="@drawable/ripple_icon_button"
             android:contentDescription="@string/back"
-            android:foreground="?attr/selectableItemBackground"
             android:padding="10dp"
             android:src="@drawable/ic_back_24" />
 
@@ -42,10 +39,7 @@
             android:id="@+id/overflowButton"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:background="@drawable/bg_icon_button"
-            android:clipToOutline="true"
-            android:contentDescription="More options"
-            android:foreground="?attr/selectableItemBackground"
+            android:background="@drawable/ripple_icon_button"
             android:padding="10dp"
             android:src="@drawable/ic_more_vert_24"
             app:tint="@color/text_primary" />
@@ -217,7 +211,6 @@
 
             <!-- Auto-Start Settings Card -->
             <LinearLayout
-                android:id="@+id/autostartCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -290,7 +283,6 @@
 
             <!-- Don't Kill My App Guide Card -->
             <LinearLayout
-                android:id="@+id/dontKillMyAppCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -328,7 +320,6 @@
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/dontKillMyAppDescText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -337,9 +328,55 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
+            <!-- User Guide Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/user_guide_title"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/userGuideButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_chip_selected"
+                        android:minHeight="40dp"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:stateListAnimator="@null"
+                        android:text="@string/user_guide_btn"
+                        android:textAllCaps="false"
+                        android:textColor="@android:color/white" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/user_guide_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
             <!-- JawwalPay Source Mode Card -->
             <LinearLayout
-                android:id="@+id/jawwalPayModeCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -447,9 +484,7 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:background="@drawable/bg_chip_selected"
-                        android:clipToOutline="true"
-                        android:foreground="?attr/selectableItemBackground"
+                        android:background="@drawable/ripple_chip_selected"
                         android:gravity="center"
                         android:text="@string/create_backup"
                         android:textColor="@android:color/white"
@@ -465,8 +500,6 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:background="@drawable/bg_dialog_button_secondary"
-                        android:clipToOutline="true"
-                        android:foreground="?attr/selectableItemBackground"
                         android:gravity="center"
                         android:text="@string/restore_backup"
                         android:textColor="@color/text_primary"
@@ -477,7 +510,6 @@
     </androidx.core.widget.NestedScrollView>
 
     <TextView
-        android:id="@+id/footer_dev"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"

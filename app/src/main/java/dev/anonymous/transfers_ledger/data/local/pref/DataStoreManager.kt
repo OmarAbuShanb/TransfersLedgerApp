@@ -23,10 +23,6 @@ class DataStoreManager(private val context: Context) {
         val JAWWAL_PAY_MODE = stringPreferencesKey("jawwal_pay_mode")
     }
 
-    val isListenerConnected: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[LISTENER_CONNECTED] ?: false
-    }
-
     val isTrackingEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[TRACKING_ENABLED] ?: true
     }

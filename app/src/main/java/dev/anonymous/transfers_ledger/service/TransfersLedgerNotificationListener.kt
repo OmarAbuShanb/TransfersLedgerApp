@@ -14,7 +14,7 @@ import android.util.Log
 import dev.anonymous.transfers_ledger.core.JawwalPayMode
 import dev.anonymous.transfers_ledger.core.PaymentSources
 import kotlinx.coroutines.launch
-import dev.anonymous.transfers_ledger.TransfersLedgerApplication
+import dev.anonymous.transfers_ledger.app.TransfersLedgerApplication
 import dev.anonymous.transfers_ledger.core.TextNormalizer
 import dev.anonymous.transfers_ledger.core.notification.ParsedPaymentNotification
 import dev.anonymous.transfers_ledger.core.notification.PaymentNotificationParser

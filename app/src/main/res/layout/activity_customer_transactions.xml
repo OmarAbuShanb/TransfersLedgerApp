@@ -3,9 +3,11 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/app_bg"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="0dp"
     android:layoutDirection="rtl">
 
     <LinearLayout
@@ -18,10 +20,8 @@
             android:id="@+id/backButton"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:background="@drawable/bg_icon_button"
-            android:clipToOutline="true"
+            android:background="@drawable/ripple_icon_button"
             android:contentDescription="@string/back"
-            android:foreground="?attr/selectableItemBackground"
             android:padding="10dp"
             android:src="@drawable/ic_back_24" />
 
@@ -41,10 +41,8 @@
             android:id="@+id/editButton"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:background="@drawable/bg_icon_button"
-            android:clipToOutline="true"
+            android:background="@drawable/ripple_icon_button"
             android:contentDescription="@string/edit"
-            android:foreground="?attr/selectableItemBackground"
             android:padding="10dp"
             android:src="@drawable/ic_edit_24" />
     </LinearLayout>
@@ -54,6 +52,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true"
+        android:clipToPadding="false"
         android:overScrollMode="never"
         android:scrollbars="none">
 
@@ -61,7 +60,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="16dp">
+            android:paddingBottom="12dp">
 
             <include
                 android:id="@+id/statsCard"
@@ -73,7 +72,6 @@
                 android:layout_height="44dp"
                 android:layout_marginBottom="10dp"
                 android:background="@drawable/bg_chip_selected"
-                android:clipToOutline="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:gravity="center"
                 android:text="@string/create_customer"

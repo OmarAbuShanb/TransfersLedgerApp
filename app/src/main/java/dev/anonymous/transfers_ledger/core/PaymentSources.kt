@@ -27,9 +27,9 @@ object PaymentSources {
     @ColorRes
     fun badgeColorRes(sourceName: String): Int {
         return when (sourceName) {
-            PALPAY -> R.color.primary
+            PALPAY -> R.color.palpay_purple
             JAWWAL_PAY -> R.color.jawwal_green
-            BANK_OF_PALESTINE -> R.color.bop_blue
+            BANK_OF_PALESTINE -> R.color.bop_red
             else -> R.color.text_secondary
         }
     }

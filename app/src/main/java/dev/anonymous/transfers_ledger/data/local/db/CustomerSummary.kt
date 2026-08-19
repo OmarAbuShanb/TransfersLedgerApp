@@ -7,7 +7,4 @@ data class CustomerSummary(
     val accountCount: Int,
     val incomingTotal: Double,
     val outgoingTotal: Double
-) {
-    val net: Double
-        get() = incomingTotal - outgoingTotal
-}
+)

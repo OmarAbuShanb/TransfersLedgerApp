@@ -24,7 +24,7 @@ object IntentUtils {
      * نستخدم ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS بدلاً من ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
      * لضمان قبول التطبيق في جوجل بلاي (سياسة Play Policy).
      */
-    fun getBatteryOptimizationIntent(context: Context): Intent {
+    fun getBatteryOptimizationIntent(): Intent {
         return Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
     }
 }

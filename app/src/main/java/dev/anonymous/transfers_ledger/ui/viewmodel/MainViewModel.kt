@@ -40,6 +40,7 @@ import dev.anonymous.transfers_ledger.domain.model.DirectionSource
 import dev.anonymous.transfers_ledger.domain.model.SummaryPeriod
 import dev.anonymous.transfers_ledger.domain.model.TransactionDirection
 import dev.anonymous.transfers_ledger.domain.model.TransactionFilter
+import kotlin.time.Duration.Companion.milliseconds
 
 class MainViewModel(
     application: Application,
@@ -87,7 +88,7 @@ class MainViewModel(
             }
             .onEach { (selection, transactions) ->
                 val stats = TransactionStatsCalculator.calculate(transactions)
-                val summaryTitle = formatSummaryTitle(selection.period, selection.customRange, selection.customTitle)
+                val summaryTitle = formatSummaryTitle(selection.period, selection.customRange)
                 val listTitle = formatListTitle(selection.listFilter, selection.listRange)
                 _uiState.update {
                     it.copy(
@@ -138,10 +139,6 @@ class MainViewModel(
 
     fun clearListRange() {
         listRange.value = DateRange(null, null)
-    }
-
-    suspend fun searchTransactions(query: String, filter: TransactionFilter): List<TransactionWithCustomer> {
-        return repository.searchTransactions(query, filter)
     }
 
     fun searchPagedTransactions(query: String, filter: TransactionFilter): Flow<PagingData<TransactionWithCustomer>> {
@@ -215,7 +212,7 @@ class MainViewModel(
         systemStatusRefreshJob = viewModelScope.launch(Dispatchers.Default) {
             repeat(SYSTEM_STATUS_REFRESH_ATTEMPTS) { attempt ->
                 val isIgnored = isBatteryOptimizationIgnored()
-                val listenerEnabled = SystemStatusUtils.isNotificationListenerEnabled(getApplication<Application>())
+                val listenerEnabled = SystemStatusUtils.isNotificationListenerEnabled(getApplication())
                 _uiState.update {
                     it.copy(
                         batteryOptimizationIgnored = isIgnored,
@@ -223,7 +220,7 @@ class MainViewModel(
                     )
                 }
                 if (attempt < SYSTEM_STATUS_REFRESH_ATTEMPTS - 1) {
-                    delay(SYSTEM_STATUS_REFRESH_INTERVAL_MS)
+                    delay(SYSTEM_STATUS_REFRESH_INTERVAL_MS.milliseconds)
                 }
             }
         }
@@ -236,7 +233,7 @@ class MainViewModel(
 
     private val headerDateFormat by lazy { java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.forLanguageTag("ar")) }
 
-    private fun formatSummaryTitle(period: SummaryPeriod, customRange: DateRange?, customTitle: String?): String {
+    private fun formatSummaryTitle(period: SummaryPeriod, customRange: DateRange?): String {
         if (customRange?.startAt != null) {
             val start = customRange.startAt
             val end = customRange.endAt ?: start

@@ -31,8 +31,6 @@ class TransactionRepository(
     private val transactionDao: TransactionDao = database.transactionDao()
 
     val isTrackingEnabled: Flow<Boolean> = dataStoreManager.isTrackingEnabled
-    val isListenerConnected: Flow<Boolean> = dataStoreManager.isListenerConnected
-    val firstOpenAt: Flow<Long> = dataStoreManager.firstOpenAt
     val summaryPeriod: Flow<SummaryPeriod> = dataStoreManager.summaryPeriod
     val jawwalPayMode: Flow<JawwalPayMode> = dataStoreManager.jawwalPayMode
 
@@ -89,23 +87,6 @@ class TransactionRepository(
         val cleanDigits = TextNormalizer.normalizeDigits(query).trim()
         val cleanedPhone = dev.anonymous.transfers_ledger.core.PhoneNumberUtils.cleanPhoneNumber(query)
         return cleanDigits.startsWith("05") || cleanedPhone.startsWith("05")
-    }
-
-    suspend fun searchTransactions(
-        query: String,
-        filter: TransactionFilter,
-        limit: Int = SEARCH_LIMIT
-    ): List<TransactionWithCustomer> {
-        val normalized = TextNormalizer.normalize(query)
-        val amount = TextNormalizer.normalizeDigits(query).trim().toDoubleOrNull()
-        val searchPhone = if (isPhoneSearchQuery(query)) 1 else 0
-        return transactionDao.searchTransactions(
-            normalizedQuery = normalized,
-            amount = amount,
-            direction = filter.toDirectionName(),
-            searchPhone = searchPhone,
-            limit = limit
-        )
     }
 
     fun searchPagedTransactions(query: String, filter: TransactionFilter): Flow<PagingData<TransactionWithCustomer>> {
@@ -185,16 +166,8 @@ class TransactionRepository(
         )
     }
 
-    fun getIdentifiersForCustomer(customerId: Long): Flow<List<CustomerIdentifierEntity>> {
-        return transactionDao.getIdentifiersForCustomer(customerId)
-    }
-
     suspend fun updateCustomerName(customerId: Long, displayName: String) {
         transactionDao.updateCustomerName(customerId, displayName.trim(), System.currentTimeMillis())
-    }
-
-    suspend fun deleteIdentifier(identifierId: Long) {
-        transactionDao.deleteIdentifier(identifierId)
     }
 
     suspend fun unlinkCustomerAccount(customerId: Long, normalizedSender: String, walletSource: String) {
@@ -216,7 +189,6 @@ class TransactionRepository(
         transactionDao.updateDirection(transactionId, direction.name, source.name)
     }
 
-    suspend fun getCustomer(customerId: Long): CustomerEntity? = transactionDao.getCustomer(customerId)
     suspend fun searchCustomers(query: String): List<CustomerEntity> {
         return transactionDao.searchCustomers(TextNormalizer.normalize(query))
     }
@@ -250,7 +222,7 @@ class TransactionRepository(
         return transactionDao.countTransactionsInRange(null, null)
     }
 
-    suspend fun rangeForPeriod(period: SummaryPeriod): DateRange {
+    fun rangeForPeriod(period: SummaryPeriod): DateRange {
         val todayStart = startOfDay()
         return when (period) {
             SummaryPeriod.DAILY -> DateRange(todayStart, null)
@@ -300,23 +272,6 @@ class TransactionRepository(
         set(Calendar.MILLISECOND, 0)
     }.timeInMillis
 
-    private fun startOfWeek(): Long = Calendar.getInstance().apply {
-        firstDayOfWeek = Calendar.SATURDAY
-        set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY)
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-
-    private fun startOfMonth(): Long = Calendar.getInstance().apply {
-        set(Calendar.DAY_OF_MONTH, 1)
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-
     private fun startOfYear(): Long = Calendar.getInstance().apply {
         set(Calendar.DAY_OF_YEAR, 1)
         set(Calendar.HOUR_OF_DAY, 0)
@@ -329,7 +284,6 @@ class TransactionRepository(
 
     companion object {
         private const val PAGE_SIZE = 30
-        private const val SEARCH_LIMIT = 100
         private const val DAY_MS = 24L * 60L * 60L * 1000L
     }
 }

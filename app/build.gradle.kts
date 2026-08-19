@@ -1,7 +1,13 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
 }
+
+val keystorePropertiesFile: File = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+keystoreProperties.load(keystorePropertiesFile.inputStream())
 
 android {
     namespace = "dev.anonymous.transfers_ledger"
@@ -21,9 +27,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties["STORE_FILE"] as String)
+            storePassword = keystoreProperties["STORE_PASSWORD"] as String
+            keyAlias = keystoreProperties["KEY_ALIAS"] as String
+            keyPassword = keystoreProperties["KEY_PASSWORD"] as String
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

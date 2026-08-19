@@ -7,10 +7,10 @@ import dev.anonymous.transfers_ledger.domain.model.WalletStats
 
 object TransactionStatsCalculator {
     fun calculate(transactions: List<TransactionEntity>): DashboardStats {
-        var total = MutableWalletStats()
-        var palpay = MutableWalletStats()
-        var jawwalPay = MutableWalletStats()
-        var bankOfPalestine = MutableWalletStats()
+        val total = MutableWalletStats()
+        val palpay = MutableWalletStats()
+        val jawwalPay = MutableWalletStats()
+        val bankOfPalestine = MutableWalletStats()
 
         transactions.forEach { transaction ->
             total.add(transaction)
@@ -46,7 +46,4 @@ object TransactionStatsCalculator {
         fun toWalletStats(): WalletStats = WalletStats(count, incoming, outgoing)
     }
 
-    const val WALLET_PALPAY = PaymentSources.PALPAY
-    const val WALLET_JAWWAL_PAY = PaymentSources.JAWWAL_PAY
-    const val WALLET_BANK_OF_PALESTINE = PaymentSources.BANK_OF_PALESTINE
 }

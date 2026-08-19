@@ -3,7 +3,6 @@ package dev.anonymous.transfers_ledger.ui.common
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.Gravity
@@ -14,10 +13,16 @@ import android.view.animation.DecelerateInterpolator
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
+import androidx.appcompat.content.res.AppCompatResources
 import dev.anonymous.transfers_ledger.R
+import androidx.core.graphics.drawable.toDrawable
 
 object AnimatedPopupMenu {
     private var activePopup: PopupWindow? = null
+
+    /** Tag identifying which menu is currently showing (for state restoration). */
+    var activeTag: String? = null
+        private set
 
     data class Action(
         val title: String,
@@ -26,7 +31,29 @@ object AnimatedPopupMenu {
         val onClick: () -> Unit
     )
 
-    fun show(context: Context, anchor: View, actions: List<Action>) {
+    /**
+     * Force-dismiss any active popup.
+     * Activities should call this from onDestroy() to avoid window leaks.
+     */
+    fun dismissAll() {
+        activePopup?.let { p ->
+            try {
+                if (p.isShowing) p.dismiss()
+            } catch (_: Exception) {
+            }
+            activePopup = null
+        }
+        activeTag = null
+    }
+
+
+    fun show(
+        context: Context,
+        anchor: View,
+        actions: List<Action>,
+        tag: String? = null,
+        onDismiss: (() -> Unit)? = null
+    ) {
         if (actions.isEmpty()) return
         activePopup?.dismiss()
 
@@ -53,13 +80,18 @@ object AnimatedPopupMenu {
             true
         ).apply {
             isOutsideTouchable = true
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
             elevation = dp(context, 10).toFloat()
             setOnDismissListener {
-                if (activePopup === this) activePopup = null
+                if (activePopup === this) {
+                    activePopup = null
+                    activeTag = null
+                }
+                onDismiss?.invoke()
             }
         }
         activePopup = popup
+        activeTag = tag
 
         actions.forEach { action ->
             container.addView(menuItem(context, action, popup, container))
@@ -109,7 +141,8 @@ object AnimatedPopupMenu {
     ): TextView {
         val selectable = TypedValue()
         context.theme.resolveAttribute(android.R.attr.selectableItemBackground, selectable, true)
-        val itemColor = context.getColor(if (action.destructive) R.color.outgoing else R.color.text_primary)
+        val itemColor =
+            context.getColor(if (action.destructive) R.color.outgoing else R.color.text_primary)
         return TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -128,7 +161,7 @@ object AnimatedPopupMenu {
             //   RTL (Arabic): text starts at RIGHT, drawableEnd appears on the LEFT ✓
             //   LTR (English): text starts at LEFT, drawableEnd appears on the RIGHT ✓
             if (action.checked) {
-                val checkIcon = context.getDrawable(R.drawable.ic_check_24)?.mutate()
+                val checkIcon = AppCompatResources.getDrawable(context, R.drawable.ic_check_24)
                 checkIcon?.setTint(itemColor)
                 val iconSize = dp(context, 18)
                 checkIcon?.setBounds(0, 0, iconSize, iconSize)

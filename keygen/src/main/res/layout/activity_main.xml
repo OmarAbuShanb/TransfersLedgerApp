@@ -54,7 +54,6 @@
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tv_key_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -62,7 +61,6 @@
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_generate_keys"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -77,11 +75,9 @@
                     android:text="@string/label_public_key"
                     android:textAppearance="?attr/textAppearanceLabelMedium"
                     android:textColor="?attr/colorPrimary"
-                    android:visibility="gone"
-                    android:id="@+id/label_public_key" />
+                    android:visibility="gone" />
 
                 <TextView
-                    android:id="@+id/tv_public_key"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
@@ -94,7 +90,6 @@
                     android:padding="8dp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_copy_public_key"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -108,11 +103,9 @@
                     android:layout_height="1dp"
                     android:layout_marginVertical="12dp"
                     android:background="?attr/colorOutlineVariant"
-                    android:id="@+id/divider_backup"
                     android:visibility="gone" />
 
                 <TextView
-                    android:id="@+id/label_backup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_backup_section"
@@ -121,7 +114,6 @@
                     android:visibility="gone" />
 
                 <LinearLayout
-                    android:id="@+id/layout_backup_buttons"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -129,7 +121,6 @@
                     android:visibility="gone">
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_export_private_key"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
                         android:layout_weight="1"
@@ -139,7 +130,6 @@
                         android:textSize="12sp" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_import_private_key"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_weight="1"
@@ -176,7 +166,6 @@
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_device_hash"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text"
@@ -188,7 +177,6 @@
 
         <!-- Generate Button -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_generate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -196,7 +184,6 @@
 
         <!-- Result Card -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_result"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
@@ -221,7 +208,6 @@
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <TextView
-                    android:id="@+id/tv_generated_code"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -232,7 +218,6 @@
                     android:breakStrategy="simple" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_copy"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

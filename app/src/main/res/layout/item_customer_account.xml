@@ -4,7 +4,6 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     android:background="@drawable/bg_card_stroked"
-    android:clipToOutline="true"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:padding="12dp">
@@ -39,9 +38,7 @@
         android:id="@+id/unlinkButton"
         android:layout_width="wrap_content"
         android:layout_height="36dp"
-        android:background="@drawable/bg_dialog_button_secondary"
-        android:clipToOutline="true"
-        android:foreground="?attr/selectableItemBackground"
+        android:background="@drawable/ripple_dialog_button_secondary"
         android:gravity="center"
         android:minWidth="76dp"
         android:paddingStart="12dp"

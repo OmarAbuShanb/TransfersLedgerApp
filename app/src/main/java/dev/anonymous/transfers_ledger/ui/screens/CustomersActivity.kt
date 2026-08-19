@@ -1,4 +1,4 @@
-package dev.anonymous.transfers_ledger
+package dev.anonymous.transfers_ledger.ui.screens
 
 import android.content.Intent
 import android.os.Bundle
@@ -13,6 +13,8 @@ import androidx.core.content.getSystemService
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
+import dev.anonymous.transfers_ledger.R
+import dev.anonymous.transfers_ledger.app.TransfersLedgerApplication
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -22,6 +24,7 @@ import dev.anonymous.transfers_ledger.data.local.db.CustomerSummary
 import dev.anonymous.transfers_ledger.databinding.ActivityCustomersBinding
 import dev.anonymous.transfers_ledger.ui.adapters.CustomerSummaryPagingAdapter
 import dev.anonymous.transfers_ledger.ui.viewmodel.MainViewModel
+import kotlin.time.Duration.Companion.milliseconds
 
 class CustomersActivity : ComponentActivity() {
     private lateinit var binding: ActivityCustomersBinding
@@ -81,7 +84,7 @@ class CustomersActivity : ComponentActivity() {
         searchJob?.cancel()
         lastQuery = binding.searchInput.text.toString().trim()
         searchJob = lifecycleScope.launch {
-            delay(180)
+            delay(180.milliseconds)
             viewModel.getPagedCustomers(lastQuery).collectLatest { adapter.submitData(it) }
         }
     }

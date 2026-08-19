@@ -16,7 +16,6 @@
     <!-- Code Generation -->
     <string name="section_generate_code">توليد كود التفعيل</string>
     <string name="label_device_hash">هاش الجهاز (من رسالة واتساب العميل)</string>
-    <string name="hint_device_hash">الصق هاش الجهاز هنا</string>
     <string name="btn_generate">توليد كود التفعيل</string>
     <string name="btn_copy">نسخ الكود</string>
     <string name="label_result">كود التفعيل:</string>

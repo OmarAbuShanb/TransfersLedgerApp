@@ -1,4 +1,4 @@
-package dev.anonymous.transfers_ledger
+package dev.anonymous.transfers_ledger.app
 
 import android.app.Application
 import dev.anonymous.transfers_ledger.data.local.db.TransactionDatabase

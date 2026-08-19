@@ -19,7 +19,7 @@
     </queries>
 
     <application
-        android:name=".TransfersLedgerApplication"
+        android:name=".app.TransfersLedgerApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -30,7 +30,7 @@
         android:theme="@style/Theme.TransfersLedgerApp">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.screens.MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true"
             android:launchMode="singleTop">
@@ -41,22 +41,27 @@
         </activity>
 
         <activity
-            android:name=".SettingsActivity"
+            android:name=".ui.screens.SettingsActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
         <activity
-            android:name=".SearchActivity"
+            android:name=".ui.screens.SearchActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
         <activity
-            android:name=".CustomersActivity"
+            android:name=".ui.screens.CustomersActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
         <activity
-            android:name=".CustomerTransactionsActivity"
+            android:name=".ui.screens.CustomerTransactionsActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.screens.UserGuideActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
