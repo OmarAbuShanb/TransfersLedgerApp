@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import dev.anonymous.transfers_ledger.core.TimeUtils
 import dev.anonymous.transfers_ledger.core.TransactionStatsCalculator
+import dev.anonymous.transfers_ledger.data.local.db.TransactionEntity
 import dev.anonymous.transfers_ledger.data.local.db.TransactionWithCustomer
 import dev.anonymous.transfers_ledger.databinding.ActivityCustomerTransactionsBinding
 import dev.anonymous.transfers_ledger.databinding.ViewStatCardBinding
@@ -34,6 +35,7 @@ class CustomerTransactionsActivity : FragmentActivity() {
     private var sender: String = ""
     private var pendingPopupTag: String? = null
     private var pendingTransactionId: Long = -1L
+    private var isDefaultOutgoing: Boolean = false
 
     // Reactive customer ID. Initialized from the Intent extra. When the user creates
     // a customer while viewing sender-only transactions, we update this flow and the
@@ -54,6 +56,16 @@ class CustomerTransactionsActivity : FragmentActivity() {
         binding.titleText.text = initialTitle
         updateHeaderButtons(customerIdFlow.value)
 
+        // Default outgoing card cancel button
+        binding.cancelDefaultOutgoingBtn.setOnClickListener {
+            showDisableDefaultOutgoingDialog()
+        }
+
+        // Default excluded card cancel button
+        binding.cancelDefaultExcludedBtn.setOnClickListener {
+            showDisableDefaultExcludedDialog()
+        }
+
         accountsAdapter = CustomerAccountAdapter(::confirmUnlinkAccount)
         binding.accountsRecycler.layoutManager = LinearLayoutManager(this)
         binding.accountsRecycler.itemAnimator = null
@@ -66,6 +78,13 @@ class CustomerTransactionsActivity : FragmentActivity() {
         binding.backButton.setOnClickListener { finish() }
         binding.editButton.setOnClickListener { showEditNameDialog() }
         binding.createCustomerButton.setOnClickListener { showCreateCustomerDialog() }
+        binding.linkCustomerButton.setOnClickListener { showLinkCustomerSheet() }
+
+        // Load defaultOutgoing and defaultExcluded state
+        lifecycleScope.launch {
+            loadDefaultOutgoingState()
+            loadDefaultExcludedState()
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -82,7 +101,18 @@ class CustomerTransactionsActivity : FragmentActivity() {
                     }
                     .map { items -> items to TransactionStatsCalculator.calculate(items.map { it.transaction }) }
                     .collect { (items, stats) ->
-                        val customerId = customerIdFlow.value
+                        var customerId = customerIdFlow.value
+                        if (customerId <= 0L && items.isNotEmpty()) {
+                            val detectedId = items.firstNotNullOfOrNull { it.transaction.customerId }
+                            if (detectedId != null && detectedId > 0L) {
+                                customerIdFlow.value = detectedId
+                                customerId = detectedId
+                                binding.titleText.text = items.first().displayName
+                                updateHeaderButtons(detectedId)
+                                loadDefaultOutgoingState()
+                                loadDefaultExcludedState()
+                            }
+                        }
                         adapter.submitList(items) {
                             if (pendingPopupTag == POPUP_TRANSACTION && pendingTransactionId > 0L) {
                                 val index = items.indexOfFirst { it.transaction.id == pendingTransactionId }
@@ -108,7 +138,7 @@ class CustomerTransactionsActivity : FragmentActivity() {
     private fun updateHeaderButtons(customerId: Long) {
         val hasCustomer = customerId > 0L
         binding.editButton.visibility = if (hasCustomer) View.VISIBLE else View.GONE
-        binding.createCustomerButton.visibility = if (hasCustomer) View.GONE else View.VISIBLE
+        binding.customerActionsLayout.visibility = if (hasCustomer) View.GONE else View.VISIBLE
     }
 
     private fun buildAccounts(items: List<TransactionWithCustomer>): List<CustomerAccount> {
@@ -142,10 +172,36 @@ class CustomerTransactionsActivity : FragmentActivity() {
             lifecycleScope.launch {
                 if (isLastAccount) {
                     repository.deleteCustomer(customerId)
-                    finish()
+                    sender = account.senderName.ifBlank { sender }
+                    customerIdFlow.value = -1L
+                    binding.titleText.text = sender.ifBlank { getString(R.string.customer_title) }
+                    updateHeaderButtons(-1L)
+                    loadDefaultOutgoingState()
+                    loadDefaultExcludedState()
                 } else {
                     repository.unlinkCustomerAccount(customerId, account.normalizedSender, account.walletSource)
                 }
+            }
+        }
+    }
+
+    private fun showLinkCustomerSheet() {
+        val firstTx = adapter.currentList.firstOrNull()?.transaction
+        AppDialogs.showCustomerLinkSheet(
+            fragmentManager = supportFragmentManager,
+            searchCustomers = { query -> repository.searchCustomers(query) }
+        ) { customer ->
+            lifecycleScope.launch {
+                if (firstTx != null) {
+                    repository.linkTransactionToCustomer(firstTx, customer.id)
+                } else if (sender.isNotBlank()) {
+                    repository.addIdentifier(customer.id, sender)
+                }
+                customerIdFlow.value = customer.id
+                binding.titleText.text = customer.displayName
+                updateHeaderButtons(customer.id)
+                loadDefaultOutgoingState()
+                loadDefaultExcludedState()
             }
         }
     }
@@ -154,6 +210,10 @@ class CustomerTransactionsActivity : FragmentActivity() {
         val locale = TimeUtils.getLocale(resources.configuration)
         card.cardTitle.text = title
         card.cardTitle.setTextColor(getColor(R.color.text_primary))
+        card.copyTitleButton.visibility = View.VISIBLE
+        card.copyTitleButton.setOnClickListener {
+            dev.anonymous.transfers_ledger.core.ClipboardUtils.copy(this, title)
+        }
 
         // Set labels
         card.incomingLabel.text = getString(R.string.incoming_label)
@@ -180,22 +240,214 @@ class CustomerTransactionsActivity : FragmentActivity() {
         pendingTransactionId = item.transaction.id
         val transaction = item.transaction
         val toggleTitle = if (transaction.direction == TransactionDirection.OUTGOING) R.string.mark_incoming else R.string.mark_outgoing
+        val excludedTitle = if (transaction.excluded) R.string.mark_included else R.string.mark_excluded
         AnimatedPopupMenu.show(
             this,
             anchor,
             listOf(
                 AnimatedPopupMenu.Action(getString(toggleTitle)) {
-                    val newDirection = if (transaction.direction == TransactionDirection.OUTGOING) {
-                        TransactionDirection.INCOMING
-                    } else {
-                        TransactionDirection.OUTGOING
-                    }
-                    lifecycleScope.launch { repository.updateDirection(transaction.id, newDirection) }
+                    handleDirectionToggle(transaction)
+                },
+                AnimatedPopupMenu.Action(getString(excludedTitle)) {
+                    handleExcludedToggle(transaction)
                 }
             ),
             tag = POPUP_TRANSACTION,
             onDismiss = { pendingTransactionId = -1L }
         )
+    }
+
+    private fun handleDirectionToggle(transaction: TransactionEntity) {
+        val customerId = transaction.customerId
+        if (transaction.direction == TransactionDirection.INCOMING) {
+            // Switching from INCOMING -> OUTGOING
+            lifecycleScope.launch {
+                repository.updateDirection(transaction.id, TransactionDirection.OUTGOING)
+            }
+            // If the customer exists and is NOT already defaultOutgoing, suggest enabling it
+            if (customerId != null && customerId > 0L && !isDefaultOutgoing) {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_outgoing_enable_title),
+                    message = getString(R.string.default_outgoing_enable_message),
+                    positiveText = getString(R.string.default_outgoing_enable_confirm)
+                ) {
+                    lifecycleScope.launch {
+                        repository.setCustomerDefaultOutgoing(customerId, true)
+                        loadDefaultOutgoingState()
+                    }
+                }
+            } else if (customerId == null || customerId <= 0L) {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_outgoing_enable_title),
+                    message = getString(R.string.default_outgoing_enable_message),
+                    positiveText = getString(R.string.default_outgoing_enable_confirm)
+                ) {
+                    lifecycleScope.launch {
+                        val newCustomerId = repository.createCustomerFromSender(sender, sender)
+                        repository.setCustomerDefaultOutgoing(newCustomerId, true)
+                        customerIdFlow.value = newCustomerId
+                        binding.titleText.text = sender
+                        updateHeaderButtons(newCustomerId)
+                        loadDefaultOutgoingState()
+                    }
+                }
+            }
+        } else {
+            // Switching from OUTGOING -> INCOMING
+            lifecycleScope.launch {
+                repository.updateDirection(transaction.id, TransactionDirection.INCOMING)
+            }
+            // If the customer has defaultOutgoing enabled, suggest disabling it
+            if (customerId != null && customerId > 0L && isDefaultOutgoing) {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_outgoing_disable_title),
+                    message = getString(R.string.default_outgoing_disable_message),
+                    positiveText = getString(R.string.default_outgoing_disable_confirm)
+                ) {
+                    lifecycleScope.launch {
+                        repository.setCustomerDefaultOutgoing(customerId, false)
+                        loadDefaultOutgoingState()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleExcludedToggle(transaction: TransactionEntity) {
+        val newExcluded = !transaction.excluded
+        lifecycleScope.launch {
+            if (newExcluded && !repository.isExcludedExplanationShown()) {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.excluded_first_time_title),
+                    message = getString(R.string.excluded_first_time_message),
+                    positiveText = getString(R.string.default_excluded_enable_confirm)
+                ) {
+                    lifecycleScope.launch {
+                        repository.setExcludedExplanationShown(true)
+                        applyExcludedToggle(transaction, newExcluded)
+                    }
+                }
+            } else {
+                applyExcludedToggle(transaction, newExcluded)
+            }
+        }
+    }
+
+    private fun applyExcludedToggle(transaction: TransactionEntity, newExcluded: Boolean) {
+        lifecycleScope.launch {
+            repository.setTransactionExcluded(transaction.id, newExcluded)
+        }
+        
+        if (newExcluded) {
+            if (transaction.customerId != null && transaction.customerId > 0L) {
+                lifecycleScope.launch {
+                    val isAlreadyDefault = repository.isCustomerDefaultExcluded(transaction.customerId)
+                    if (!isAlreadyDefault) {
+                        AppDialogs.showConfirmation(
+                            fragmentManager = supportFragmentManager,
+                            title = getString(R.string.default_excluded_enable_title),
+                            message = getString(R.string.default_excluded_enable_message),
+                            positiveText = getString(R.string.default_excluded_enable_confirm)
+                        ) {
+                            lifecycleScope.launch {
+                                repository.setCustomerDefaultExcluded(transaction.customerId, true)
+                                loadDefaultExcludedState()
+                            }
+                        }
+                    }
+                }
+            } else {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_excluded_enable_title),
+                    message = getString(R.string.default_excluded_enable_message),
+                    positiveText = getString(R.string.default_excluded_enable_confirm)
+                ) {
+                    lifecycleScope.launch {
+                        val newCustomerId = repository.createCustomerFromSender(sender, sender)
+                        repository.setCustomerDefaultExcluded(newCustomerId, true)
+                        customerIdFlow.value = newCustomerId
+                        binding.titleText.text = sender
+                        updateHeaderButtons(newCustomerId)
+                        loadDefaultOutgoingState()
+                        loadDefaultExcludedState()
+                    }
+                }
+            }
+        } else if (transaction.customerId != null && transaction.customerId > 0L) {
+            lifecycleScope.launch {
+                val isDefault = repository.isCustomerDefaultExcluded(transaction.customerId)
+                if (isDefault) {
+                    AppDialogs.showConfirmation(
+                        fragmentManager = supportFragmentManager,
+                        title = getString(R.string.default_excluded_disable_title),
+                        message = getString(R.string.default_excluded_disable_message),
+                        positiveText = getString(R.string.default_excluded_disable_confirm)
+                    ) {
+                        lifecycleScope.launch {
+                            repository.setCustomerDefaultExcluded(transaction.customerId, false)
+                            loadDefaultExcludedState()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun loadDefaultOutgoingState() {
+        val customerId = customerIdFlow.value
+        if (customerId > 0L) {
+            isDefaultOutgoing = repository.isCustomerDefaultOutgoing(customerId)
+        } else {
+            isDefaultOutgoing = false
+        }
+        binding.defaultOutgoingCard.visibility = if (isDefaultOutgoing) View.VISIBLE else View.GONE
+    }
+
+    private fun showDisableDefaultOutgoingDialog() {
+        val customerId = customerIdFlow.value
+        if (customerId <= 0L) return
+        AppDialogs.showConfirmation(
+            fragmentManager = supportFragmentManager,
+            title = getString(R.string.default_outgoing_disable_title),
+            message = getString(R.string.default_outgoing_disable_message),
+            positiveText = getString(R.string.default_outgoing_disable_confirm)
+        ) {
+            lifecycleScope.launch {
+                repository.setCustomerDefaultOutgoing(customerId, false)
+                loadDefaultOutgoingState()
+            }
+        }
+    }
+
+    private suspend fun loadDefaultExcludedState() {
+        val customerId = customerIdFlow.value
+        val isDefaultExcluded = if (customerId > 0L) {
+            repository.isCustomerDefaultExcluded(customerId)
+        } else {
+            false
+        }
+        binding.defaultExcludedCard.visibility = if (isDefaultExcluded) View.VISIBLE else View.GONE
+    }
+
+    private fun showDisableDefaultExcludedDialog() {
+        val customerId = customerIdFlow.value
+        if (customerId <= 0L) return
+        AppDialogs.showConfirmation(
+            fragmentManager = supportFragmentManager,
+            title = getString(R.string.default_excluded_disable_title),
+            message = getString(R.string.default_excluded_disable_message),
+            positiveText = getString(R.string.default_excluded_disable_confirm)
+        ) {
+            lifecycleScope.launch {
+                repository.setCustomerDefaultExcluded(customerId, false)
+                loadDefaultExcludedState()
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -228,7 +480,7 @@ class CustomerTransactionsActivity : FragmentActivity() {
             fragmentManager = supportFragmentManager,
             title = getString(R.string.create_customer),
             hint = binding.titleText.text.toString().ifBlank { getString(R.string.customer_name_hint) },
-            initialValue = ""
+            initialValue = sender.ifBlank { binding.titleText.text.toString() }
         ) { name ->
             lifecycleScope.launch {
                 // Create the customer and get its new ID.

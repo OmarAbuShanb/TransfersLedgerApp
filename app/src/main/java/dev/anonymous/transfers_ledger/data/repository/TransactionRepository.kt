@@ -44,12 +44,13 @@ class TransactionRepository(
 
     fun getPagedTransactions(
         filter: TransactionFilter = TransactionFilter.ALL,
-        range: DateRange = DateRange(null, null)
+        range: DateRange = DateRange(null, null),
+        walletSource: String? = null
     ): Flow<PagingData<TransactionWithCustomer>> {
         return Pager(
             config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false),
             pagingSourceFactory = {
-                transactionDao.getPagedTransactions(filter.toDirectionName(), range.startAt, range.endAt)
+                transactionDao.getPagedTransactions(filter.toDirectionName(), range.startAt, range.endAt, walletSource)
             }
         ).flow
     }
@@ -91,7 +92,12 @@ class TransactionRepository(
 
     fun searchPagedTransactions(query: String, filter: TransactionFilter): Flow<PagingData<TransactionWithCustomer>> {
         val normalized = TextNormalizer.normalize(query)
-        val amount = TextNormalizer.normalizeDigits(query).trim().toDoubleOrNull()
+        val rawDigits = TextNormalizer.normalizeDigits(query).trim()
+        val amount = if (rawDigits.startsWith("0") && rawDigits.length > 1 && rawDigits[1] != '.') {
+            null
+        } else {
+            rawDigits.toDoubleOrNull()
+        }
         val searchPhone = if (isPhoneSearchQuery(query)) 1 else 0
         return Pager(
             config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false),
@@ -120,10 +126,31 @@ class TransactionRepository(
             normalized
         )?.customerId
 
+        // If the linked customer has defaultOutgoing enabled and this transaction
+        // was auto-detected as INCOMING (i.e. the parser couldn't determine direction),
+        // flip it to OUTGOING so the user doesn't have to do it manually.
+        val isDefaultOutgoing = (transaction.directionSource == DirectionSource.AUTO || transaction.directionSource == DirectionSource.DEFAULT) &&
+            transaction.direction == TransactionDirection.INCOMING &&
+            normalized.isNotBlank() &&
+            transactionDao.isDefaultOutgoingBySender(normalized) == true
+
+        val finalDirection = if (isDefaultOutgoing) TransactionDirection.OUTGOING else transaction.direction
+        val finalDirectionSource = if (isDefaultOutgoing) DirectionSource.DEFAULT else transaction.directionSource
+
+        // If the linked customer has defaultExcluded enabled,
+        // mark this transaction as excluded automatically.
+        val finalExcluded = if (
+            normalized.isNotBlank() &&
+            transactionDao.isDefaultExcludedBySender(normalized) == true
+        ) true else transaction.excluded
+
         return transactionDao.insertTransaction(
             transaction.copy(
                 normalizedSender = normalized,
-                customerId = linkedCustomerId
+                customerId = linkedCustomerId,
+                direction = finalDirection,
+                directionSource = finalDirectionSource,
+                excluded = finalExcluded
             )
         )
     }
@@ -188,6 +215,69 @@ class TransactionRepository(
     ) {
         transactionDao.updateDirection(transactionId, direction.name, source.name)
     }
+
+    suspend fun setCustomerDefaultOutgoing(customerId: Long, defaultOutgoing: Boolean) {
+        transactionDao.updateCustomerDefaultOutgoing(customerId, defaultOutgoing, System.currentTimeMillis())
+    }
+
+    suspend fun isCustomerDefaultOutgoing(customerId: Long): Boolean {
+        return transactionDao.isCustomerDefaultOutgoing(customerId)
+    }
+
+    // --- Excluded / غير محتسبة ---
+
+    suspend fun setTransactionExcluded(transactionId: Long, excluded: Boolean) {
+        transactionDao.updateExcluded(transactionId, excluded)
+    }
+
+    suspend fun setCustomerDefaultExcluded(customerId: Long, defaultExcluded: Boolean) {
+        transactionDao.updateCustomerDefaultExcluded(customerId, defaultExcluded, System.currentTimeMillis())
+    }
+
+    suspend fun isCustomerDefaultExcluded(customerId: Long): Boolean {
+        return transactionDao.isCustomerDefaultExcluded(customerId)
+    }
+
+    // --- Customers by purchase ---
+
+    fun getPagedCustomersByPurchase(query: String): Flow<PagingData<CustomerSummary>> {
+        return Pager(
+            config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false),
+            pagingSourceFactory = {
+                transactionDao.getPagedCustomersByPurchase(TextNormalizer.normalize(query))
+            }
+        ).flow
+    }
+
+    // --- Unprocessed notifications ---
+
+    suspend fun insertUnprocessedNotification(notification: dev.anonymous.transfers_ledger.data.local.db.UnprocessedNotificationEntity) {
+        transactionDao.insertUnprocessedNotification(notification)
+    }
+
+    fun getPagedUnprocessedNotifications(): Flow<PagingData<dev.anonymous.transfers_ledger.data.local.db.UnprocessedNotificationEntity>> {
+        return Pager(
+            config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false),
+            pagingSourceFactory = {
+                transactionDao.getPagedUnprocessedNotifications()
+            }
+        ).flow
+    }
+
+    suspend fun deleteAllUnprocessedNotifications() {
+        transactionDao.deleteAllUnprocessedNotifications()
+    }
+
+    // --- Latest transaction for notification ---
+
+    fun getLatestTransaction(): Flow<TransactionWithCustomer?> {
+        return transactionDao.getLatestTransaction()
+    }
+
+    // --- First-time excluded explanation ---
+
+    suspend fun isExcludedExplanationShown(): Boolean = dataStoreManager.isExcludedExplanationShown()
+    suspend fun setExcludedExplanationShown(shown: Boolean) = dataStoreManager.setExcludedExplanationShown(shown)
 
     suspend fun searchCustomers(query: String): List<CustomerEntity> {
         return transactionDao.searchCustomers(TextNormalizer.normalize(query))

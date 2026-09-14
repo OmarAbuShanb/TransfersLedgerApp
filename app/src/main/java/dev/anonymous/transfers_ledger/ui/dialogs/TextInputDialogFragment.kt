@@ -61,7 +61,7 @@ class TextInputDialogFragment : BaseAnimatedDialogFragment() {
         binding.inputText.hint = hint
         binding.inputText.filters = arrayOf(InputFilter.LengthFilter(MAX_LENGTH))
         binding.inputText.setText(initialValue)
-        binding.inputText.setSelection(binding.inputText.text?.length ?: 0)
+        binding.inputText.selectAll()
 
         binding.inputText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit

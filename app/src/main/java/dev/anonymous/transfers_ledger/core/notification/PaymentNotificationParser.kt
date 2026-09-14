@@ -19,20 +19,17 @@ object PaymentNotificationParser {
                 rule(
                     name = "PalPay English pay-to-friend",
                     regex = "Transfer\\s+Pay-to-Friend:$SPACES(.*?)$SPACES[,،]$SPACES(?:amount\\s+of|بمبلغ)$SPACES(?:ILS$SPACES)?$AMOUNT",
-                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
-                    outgoingHints = listOf("WALLET")
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS
                 ),
                 rule(
                     name = "PalPay Arabic pay-to-friend",
                     regex = "تحويل\\s+دفع\\s+لصديق:$SPACES(.*?)$SPACES[,،]$SPACES(?:بمبلغ|amount\\s+of)$SPACES(?:ILS$SPACES)?$AMOUNT",
-                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
-                    outgoingHints = listOf("WALLET")
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS
                 ),
                 rule(
                     name = "PalPay short pay-to-friend",
                     regex = "Pay-to-Friend:$SPACES(.*?)$SPACES[,،]$SPACES(?:amount\\s+of|بمبلغ)$SPACES(?:ILS$SPACES)?$AMOUNT",
-                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
-                    outgoingHints = listOf("WALLET")
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS
                 )
             )
         ),
@@ -89,26 +86,22 @@ object PaymentNotificationParser {
                 rule(
                     name = "BOP English mobile banking transfer",
                     regex = "Mobile:${SPACES}Banking\\s+transfer:${SPACES}(.*?)${SPACES}[,،]${SPACES}amount\\s+of${SPACES}${AMOUNT}${SPACES}ILS",
-                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
-                    outgoingHints = listOf("WALLET")
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS
                 ),
                 rule(
                     name = "BOP English pay-to-friend",
                     regex = "Transfer\\s+Pay-to-Friend:${SPACES}(.*?)${SPACES}[,،]${SPACES}amount\\s+of${SPACES}(?:ILS${SPACES})?${AMOUNT}",
-                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
-                    outgoingHints = listOf("WALLET")
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS
                 ),
                 rule(
                     name = "BOP Arabic pay-to-friend",
                     regex = "تحويل\\s+دفع\\s+لصديق:${SPACES}(.*?)${SPACES}[,،]${SPACES}(?:بمبلغ|amount\\s+of)${SPACES}(?:ILS${SPACES})?${AMOUNT}",
-                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
-                    outgoingHints = listOf("WALLET")
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS
                 ),
                 rule(
                     name = "BOP Arabic banking transfer",
                     regex = "تحويل\\s+بنكي:${SPACES}(.*?)${SPACES}[,،]${SPACES}بمبلغ${SPACES}(?:ILS${SPACES})?${AMOUNT}",
-                    directionMode = DirectionMode.AUTO_BY_KEYWORDS,
-                    outgoingHints = listOf("WALLET")
+                    directionMode = DirectionMode.AUTO_BY_KEYWORDS
                 )
             )
         ),
@@ -166,6 +159,21 @@ object PaymentNotificationParser {
                     directionMode = DirectionMode.INCOMING,
                     senderGroup = 2,
                     amountGroup = 1
+                ),
+                rule(
+                    name = "JawwalPay SMS Arabic outgoing (merchant payment)",
+                    regex = "تمت\\s+حركة\\s+دفع\\s+للتاجر${SPACES}(.*?)${SPACES}بمبلغ:${SPACES}(?:ILS${SPACES})?${AMOUNT}${SPACES}بنجاح",
+                    directionMode = DirectionMode.OUTGOING,
+                    senderGroup = 1,
+                    amountGroup = 2
+                ),
+                rule(
+                    name = "JawwalPay SMS Arabic outgoing (merchant payment with reference)",
+                    regex = "تمت\\s+حركة\\s+الدفع\\s+للتاجر${SPACES}(.*?)${SPACES}بمبلغ:${SPACES}(?:ILS${SPACES})?${AMOUNT}${SPACES}:${SPACES}بنجاح.*?الرقم\\s+المرجعي:${SPACES}(\\d+)",
+                    directionMode = DirectionMode.OUTGOING,
+                    senderGroup = 1,
+                    amountGroup = 2,
+                    referenceGroup = 3
                 )
             )
         )
@@ -182,13 +190,14 @@ object PaymentNotificationParser {
         source.patterns.forEach { rule ->
             val matcher = rule.pattern.matcher(text)
             if (matcher.find()) {
+                val directionInfo = resolveDirection(source, rule, text)
                 return ParsedPaymentNotification(
                     sender = cleanSender(matcher.groupOrNull(rule.senderGroup)),
                     amount = matcher.groupOrNull(rule.amountGroup).orEmpty(),
                     reference = rule.referenceGroup?.let { matcher.groupOrNull(it) },
                     sourceName = source.sourceName,
-                    direction = resolveDirection(source, rule, text),
-                    directionSource = DirectionSource.AUTO,
+                    direction = directionInfo.first,
+                    directionSource = directionInfo.second,
                     matchedRuleName = rule.name
                 )
             }
@@ -201,11 +210,18 @@ object PaymentNotificationParser {
         source: NotificationSource,
         rule: NotificationRule,
         text: String
-    ): TransactionDirection {
+    ): Pair<TransactionDirection, DirectionSource> {
         return when (rule.directionMode) {
-            DirectionMode.INCOMING -> TransactionDirection.INCOMING
-            DirectionMode.OUTGOING -> TransactionDirection.OUTGOING
-            DirectionMode.AUTO_BY_KEYWORDS -> detectDirection(rule, text) ?: source.defaultDirection
+            DirectionMode.INCOMING -> TransactionDirection.INCOMING to DirectionSource.AUTO
+            DirectionMode.OUTGOING -> TransactionDirection.OUTGOING to DirectionSource.AUTO
+            DirectionMode.AUTO_BY_KEYWORDS -> {
+                val detected = detectDirection(rule, text)
+                if (detected != null) {
+                    detected to DirectionSource.AUTO
+                } else {
+                    source.defaultDirection to DirectionSource.DEFAULT
+                }
+            }
         }
     }
 

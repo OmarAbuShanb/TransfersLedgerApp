@@ -101,43 +101,6 @@ object AppDialogs {
         fragment.show(fragmentManager, tag)
     }
 
-    fun showActivationDialog(
-        fragmentManager: FragmentManager,
-        deviceIdHash: String,
-        message: String,
-        isCancelable: Boolean,
-        onWhatsappClick: () -> Unit,
-        onActivate: (String) -> Boolean
-    ) {
-        val tag = "ActivationDialog"
-        val existing = fragmentManager.findFragmentByTag(tag) as? ActivationDialogFragment
-        if (existing != null) {
-            existing.onWhatsappClickListener = onWhatsappClick
-            existing.onActivateListener = onActivate
-            return
-        }
-        val fragment = ActivationDialogFragment.newInstance(deviceIdHash, message, isCancelable).apply {
-            onWhatsappClickListener = onWhatsappClick
-            onActivateListener = onActivate
-        }
-        fragment.show(fragmentManager, tag)
-    }
-
-    fun showFeatureNotAvailableDialog(
-        fragmentManager: FragmentManager,
-        onActivateClick: () -> Unit
-    ) {
-        val tag = "FeatureLockedDialog"
-        val existing = fragmentManager.findFragmentByTag(tag) as? FeatureLockedDialogFragment
-        if (existing != null) {
-            existing.onActivateClickListener = onActivateClick
-            return
-        }
-        val fragment = FeatureLockedDialogFragment.newInstance().apply {
-            onActivateClickListener = onActivateClick
-        }
-        fragment.show(fragmentManager, tag)
-    }
 
     fun showCustomerLinkSheet(
         fragmentManager: FragmentManager,

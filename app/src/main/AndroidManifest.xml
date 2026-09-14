@@ -65,6 +65,11 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.screens.UnprocessedNotificationsActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false" />
+
         <service
             android:name=".service.TransfersLedgerNotificationListener"
             android:exported="true"

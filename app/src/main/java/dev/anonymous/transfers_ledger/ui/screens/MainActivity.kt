@@ -26,8 +26,6 @@ import dev.anonymous.transfers_ledger.domain.model.DateRange
 import dev.anonymous.transfers_ledger.domain.model.SummaryPeriod
 import dev.anonymous.transfers_ledger.domain.model.TransactionDirection
 import dev.anonymous.transfers_ledger.domain.model.TransactionFilter
-import dev.anonymous.transfers_ledger.license.DeviceIdProvider
-import dev.anonymous.transfers_ledger.license.LicenseManager
 import dev.anonymous.transfers_ledger.service.TrackingForegroundService
 import dev.anonymous.transfers_ledger.ui.adapters.MainHeaderAdapter
 import dev.anonymous.transfers_ledger.ui.adapters.EmptyStateAdapter
@@ -46,6 +44,7 @@ class MainActivity : FragmentActivity() {
         private const val KEY_ACTIVE_POPUP = "active_popup_tag"
         private const val POPUP_SUMMARY_PERIOD = "summary_period"
         private const val POPUP_LIST_FILTER = "list_filter"
+        private const val POPUP_SOURCE_FILTER = "source_filter"
         private const val POPUP_TRANSACTION = "transaction"
         private const val KEY_POPUP_TRANSACTION_ID = "popup_transaction_id"
     }
@@ -94,14 +93,6 @@ class MainActivity : FragmentActivity() {
                 emptyStateAdapter.updateVisible(adapter.itemCount == 0)
             }
         }
-        binding.transactionsRecycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                when {
-                    dy > 8 -> binding.searchFab.hide()
-                    dy < -8 -> binding.searchFab.show()
-                }
-            }
-        })
 
         binding.settingsButton.setOnClickListener {
             startActivity(
@@ -179,7 +170,7 @@ class MainActivity : FragmentActivity() {
     private fun restorePopupMenu() {
         val tag = pendingPopupTag ?: return
         when (tag) {
-            POPUP_SUMMARY_PERIOD, POPUP_LIST_FILTER -> {
+            POPUP_SUMMARY_PERIOD, POPUP_LIST_FILTER, POPUP_SOURCE_FILTER -> {
                 tryRestoreHeaderMenu(tag)
             }
 
@@ -218,10 +209,10 @@ class MainActivity : FragmentActivity() {
             val anchor = headerHolder?.findViewById<View>(anchorId)
             if (anchor != null) {
                 pendingPopupTag = null
-                if (tag == POPUP_SUMMARY_PERIOD) {
-                    showSummaryPeriodMenu(anchor)
-                } else {
-                    showListFilterMenu(anchor)
+                when (tag) {
+                    POPUP_SUMMARY_PERIOD -> showSummaryPeriodMenu(anchor)
+                    POPUP_SOURCE_FILTER -> showSourceFilterMenu(anchor)
+                    else -> showListFilterMenu(anchor)
                 }
             } else if (retriesLeft > 0) {
                 binding.transactionsRecycler.postDelayed({
@@ -252,64 +243,6 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    private fun checkLicenseLimit() {
-        val lm = LicenseManager.getInstance(this)
-        if (lm.isActivated) {
-            binding.activateButton.visibility = View.GONE
-            return
-        }
-
-        binding.activateButton.visibility = View.VISIBLE
-        binding.activateButton.setOnClickListener { showActivationDialog(isManual = true) }
-
-        lifecycleScope.launch {
-            val count = repository.getTotalTransactionCount()
-            if (count >= 100) {
-                showActivationDialog(isManual = false)
-            }
-        }
-    }
-
-    private fun showActivationDialog(isManual: Boolean) {
-        val deviceHash = DeviceIdProvider.getHashedId(this)
-
-        val message = if (isManual) {
-            getString(R.string.license_activate_manual_message)
-        } else {
-            getString(R.string.license_activate_message)
-        }
-
-        AppDialogs.showActivationDialog(
-            fragmentManager = supportFragmentManager,
-            deviceIdHash = deviceHash,
-            message = message,
-            isCancelable = isManual,
-            onWhatsappClick = {
-                val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
-                val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                try {
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Snackbar.make(binding.root, "واتساب غير مثبت", Snackbar.LENGTH_LONG).show()
-                }
-            },
-            onActivate = { code ->
-                val lm = LicenseManager.getInstance(this)
-                if (lm.activate(code)) {
-                    Snackbar.make(
-                        binding.root,
-                        R.string.license_activate_success,
-                        Snackbar.LENGTH_LONG
-                    ).show()
-                    checkLicenseLimit()
-                    true
-                } else {
-                    false
-                }
-            }
-        )
-    }
-
     override fun onDestroy() {
         AnimatedPopupMenu.dismissAll()
         super.onDestroy()
@@ -318,7 +251,6 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.refreshSystemStatus()
-        checkLicenseLimit()
     }
 
     private fun renderState(state: AppStatus) {
@@ -406,10 +338,11 @@ class MainActivity : FragmentActivity() {
             listOf(
                 AnimatedPopupMenu.Action(
                     getString(R.string.all_filter),
-                    checked = currentFilter == TransactionFilter.ALL && !hasCustomRange
+                    checked = currentFilter == TransactionFilter.ALL && !hasCustomRange && viewModel.sourceFilter.value == null
                 ) {
                     viewModel.setListFilter(TransactionFilter.ALL)
                     viewModel.clearListRange()
+                    viewModel.setSourceFilter(null)
                 },
                 AnimatedPopupMenu.Action(
                     getString(R.string.incoming_filter),
@@ -444,9 +377,50 @@ class MainActivity : FragmentActivity() {
                             dismiss()
                         }
                     }
+                },
+                AnimatedPopupMenu.Action(
+                    getString(R.string.source_filter),
+                    checked = viewModel.sourceFilter.value != null
+                ) {
+                    showSourceFilterMenu(anchor)
                 }
             ),
             tag = POPUP_LIST_FILTER
+        )
+    }
+
+    private fun showSourceFilterMenu(anchor: View) {
+        val currentSource = viewModel.sourceFilter.value
+        AnimatedPopupMenu.show(
+            this,
+            anchor,
+            listOf(
+                AnimatedPopupMenu.Action(
+                    getString(R.string.source_all),
+                    checked = currentSource == null
+                ) {
+                    viewModel.setSourceFilter(null)
+                },
+                AnimatedPopupMenu.Action(
+                    getString(R.string.palpay_label),
+                    checked = currentSource == dev.anonymous.transfers_ledger.core.PaymentSources.PALPAY
+                ) {
+                    viewModel.setSourceFilter(dev.anonymous.transfers_ledger.core.PaymentSources.PALPAY)
+                },
+                AnimatedPopupMenu.Action(
+                    getString(R.string.jawwalpay_label),
+                    checked = currentSource == dev.anonymous.transfers_ledger.core.PaymentSources.JAWWAL_PAY
+                ) {
+                    viewModel.setSourceFilter(dev.anonymous.transfers_ledger.core.PaymentSources.JAWWAL_PAY)
+                },
+                AnimatedPopupMenu.Action(
+                    getString(R.string.bop_label),
+                    checked = currentSource == dev.anonymous.transfers_ledger.core.PaymentSources.BANK_OF_PALESTINE
+                ) {
+                    viewModel.setSourceFilter(dev.anonymous.transfers_ledger.core.PaymentSources.BANK_OF_PALESTINE)
+                }
+            ),
+            tag = POPUP_SOURCE_FILTER
         )
     }
 
@@ -455,18 +429,16 @@ class MainActivity : FragmentActivity() {
         val transaction = item.transaction
         val toggleTitle =
             if (transaction.direction == TransactionDirection.OUTGOING) R.string.mark_incoming else R.string.mark_outgoing
+        val excludedTitle = if (transaction.excluded) R.string.mark_included else R.string.mark_excluded
         AnimatedPopupMenu.show(
             this,
             anchor,
             buildList {
-                add(AnimatedPopupMenu.Action(getString(toggleTitle)) {
-                    val newDirection = if (transaction.direction == TransactionDirection.OUTGOING) {
-                        TransactionDirection.INCOMING
-                    } else {
-                        TransactionDirection.OUTGOING
-                    }
-                    viewModel.updateDirection(transaction.id, newDirection)
-                })
+                if (transaction.customerId == null) {
+                    add(AnimatedPopupMenu.Action(getString(R.string.create_customer)) {
+                        showCreateCustomerDialog(transaction)
+                    })
+                }
                 add(AnimatedPopupMenu.Action(getString(R.string.customer_transactions)) {
                     openCustomerTransactions(item)
                 })
@@ -474,14 +446,149 @@ class MainActivity : FragmentActivity() {
                     add(AnimatedPopupMenu.Action(getString(R.string.link_customer)) {
                         showLinkCustomerSheet(transaction)
                     })
-                    add(AnimatedPopupMenu.Action(getString(R.string.create_customer)) {
-                        showCreateCustomerDialog(transaction)
-                    })
                 }
+                add(AnimatedPopupMenu.Action(getString(toggleTitle)) {
+                    handleDirectionToggle(transaction)
+                })
+                add(AnimatedPopupMenu.Action(getString(excludedTitle)) {
+                    handleExcludedToggle(transaction)
+                })
             },
             tag = POPUP_TRANSACTION,
             onDismiss = { pendingTransactionId = -1L }
         )
+    }
+
+    private fun handleDirectionToggle(transaction: TransactionEntity) {
+        val customerId = transaction.customerId
+        if (transaction.direction == TransactionDirection.INCOMING) {
+            // Switching from INCOMING -> OUTGOING
+            viewModel.updateDirection(transaction.id, TransactionDirection.OUTGOING)
+            // If the customer exists, check if we should suggest enabling defaultOutgoing
+            if (customerId != null && customerId > 0L) {
+                lifecycleScope.launch {
+                    val isDefault = viewModel.isCustomerDefaultOutgoing(customerId)
+                    if (!isDefault) {
+                        AppDialogs.showConfirmation(
+                            fragmentManager = supportFragmentManager,
+                            title = getString(R.string.default_outgoing_enable_title),
+                            message = getString(R.string.default_outgoing_enable_message),
+                            positiveText = getString(R.string.default_outgoing_enable_confirm)
+                        ) {
+                            lifecycleScope.launch {
+                                viewModel.setCustomerDefaultOutgoing(customerId, true)
+                            }
+                        }
+                    }
+                }
+            } else {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_outgoing_enable_title),
+                    message = getString(R.string.default_outgoing_enable_message),
+                    positiveText = getString(R.string.default_outgoing_enable_confirm)
+                ) {
+                    viewModel.createCustomerAndSetDefaultOutgoing(transaction) {
+                        adapter.refresh()
+                    }
+                }
+            }
+        } else {
+            // Switching from OUTGOING -> INCOMING
+            viewModel.updateDirection(transaction.id, TransactionDirection.INCOMING)
+            // If the customer has defaultOutgoing, suggest disabling it
+            if (customerId != null && customerId > 0L) {
+                lifecycleScope.launch {
+                    val isDefault = viewModel.isCustomerDefaultOutgoing(customerId)
+                    if (isDefault) {
+                        AppDialogs.showConfirmation(
+                            fragmentManager = supportFragmentManager,
+                            title = getString(R.string.default_outgoing_disable_title),
+                            message = getString(R.string.default_outgoing_disable_message),
+                            positiveText = getString(R.string.default_outgoing_disable_confirm)
+                        ) {
+                            lifecycleScope.launch {
+                                viewModel.setCustomerDefaultOutgoing(customerId, false)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleExcludedToggle(transaction: TransactionEntity) {
+        val newExcluded = !transaction.excluded
+        lifecycleScope.launch {
+            if (newExcluded && !viewModel.isExcludedExplanationShown()) {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.excluded_first_time_title),
+                    message = getString(R.string.excluded_first_time_message),
+                    positiveText = getString(R.string.default_excluded_enable_confirm)
+                ) {
+                    lifecycleScope.launch {
+                        viewModel.setExcludedExplanationShown()
+                        applyExcludedToggle(transaction, newExcluded)
+                    }
+                }
+            } else {
+                applyExcludedToggle(transaction, newExcluded)
+            }
+        }
+    }
+
+    private fun applyExcludedToggle(transaction: TransactionEntity, newExcluded: Boolean) {
+        viewModel.setTransactionExcluded(transaction.id, newExcluded) {
+            adapter.refresh()
+        }
+        
+        if (newExcluded) {
+            if (transaction.customerId != null && transaction.customerId > 0L) {
+                lifecycleScope.launch {
+                    val isAlreadyDefault = viewModel.isCustomerDefaultExcluded(transaction.customerId)
+                    if (!isAlreadyDefault) {
+                        AppDialogs.showConfirmation(
+                            fragmentManager = supportFragmentManager,
+                            title = getString(R.string.default_excluded_enable_title),
+                            message = getString(R.string.default_excluded_enable_message),
+                            positiveText = getString(R.string.default_excluded_enable_confirm)
+                        ) {
+                            lifecycleScope.launch {
+                                viewModel.setCustomerDefaultExcluded(transaction.customerId, true)
+                            }
+                        }
+                    }
+                }
+            } else {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_excluded_enable_title),
+                    message = getString(R.string.default_excluded_enable_message),
+                    positiveText = getString(R.string.default_excluded_enable_confirm)
+                ) {
+                    viewModel.createCustomerAndSetDefaultExcluded(transaction) {
+                        adapter.refresh()
+                    }
+                }
+            }
+        } else if (transaction.customerId != null && transaction.customerId > 0L) {
+            lifecycleScope.launch {
+                val isDefault = viewModel.isCustomerDefaultExcluded(transaction.customerId)
+                if (isDefault) {
+                    AppDialogs.showConfirmation(
+                        fragmentManager = supportFragmentManager,
+                        title = getString(R.string.default_excluded_disable_title),
+                        message = getString(R.string.default_excluded_disable_message),
+                        positiveText = getString(R.string.default_excluded_disable_confirm)
+                    ) {
+                        lifecycleScope.launch {
+                            viewModel.setCustomerDefaultExcluded(transaction.customerId, false)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun openCustomerTransactions(item: TransactionWithCustomer) {
@@ -501,7 +608,7 @@ class MainActivity : FragmentActivity() {
             fragmentManager = supportFragmentManager,
             title = getString(R.string.create_customer),
             hint = transaction.senderName.ifBlank { getString(R.string.customer_name_hint) },
-            initialValue = ""
+            initialValue = transaction.senderName
         ) { name ->
             viewModel.createCustomerFromTransaction(transaction, name) {
                 // Invalidate the paging source so the displayed transactions pick up

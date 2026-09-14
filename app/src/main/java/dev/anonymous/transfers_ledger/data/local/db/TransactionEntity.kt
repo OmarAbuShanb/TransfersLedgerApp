@@ -32,5 +32,6 @@ data class TransactionEntity(
     val timestamp: Long,
     val rawText: String,
     val rawTitle: String,
-    val walletSource: String
+    val walletSource: String,
+    val excluded: Boolean = false
 )

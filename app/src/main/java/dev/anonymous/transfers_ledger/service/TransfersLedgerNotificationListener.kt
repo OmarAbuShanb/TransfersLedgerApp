@@ -109,6 +109,24 @@ class TransfersLedgerNotificationListener : NotificationListenerService() {
             } else {
                 Log.w(TAG, "Parse FAILED | package=$resolvedPackageName")
                 Log.w(TAG, "CombinedText: $combinedText")
+                
+                if (PaymentSources.trackedPackages.contains(resolvedPackageName)) {
+                    val notifText = text.ifBlank { bigText }
+                    if (title.isNotBlank() && notifText.isNotBlank()) {
+                        try {
+                            repository.insertUnprocessedNotification(
+                                dev.anonymous.transfers_ledger.data.local.db.UnprocessedNotificationEntity(
+                                    packageName = resolvedPackageName,
+                                    title = title,
+                                    text = notifText,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to save unprocessed notification", e)
+                        }
+                    }
+                }
             }
         }
     }

@@ -4,7 +4,7 @@
     <string name="main_title">دفتر الحوالات</string>
     <string name="settings_title">الإعدادات</string>
     <string name="search_title">البحث</string>
-    <string name="customer_title">حوالات الزبون</string>
+    <string name="customer_title">حوالات الجهة</string>
     <string name="back">رجوع</string>
     <string name="currency_symbol">₪</string>
 
@@ -30,29 +30,37 @@
     <string name="outgoing_filter">الحوالات الصادرة</string>
     <string name="date_filter">حسب التاريخ</string>
     <string name="mark_outgoing">الحوالة أنا أرسلتها</string>
-    <string name="mark_incoming">الحوالة قادمة من زبون</string>
-    <string name="customer_transactions">كل حوالات هذا الزبون</string>
-    <string name="create_customer">إنشاء زبون</string>
-    <string name="link_customer">ربط بزبون</string>
-    <string name="link_customer_title">ربط الحوالة بزبون</string>
-    <string name="search_customers_hint">ابحث في الزبائن</string>
-    <string name="no_customers">لا يوجد زبائن بعد</string>
+    <string name="mark_incoming">جعلها واردة</string>
+    <string name="customer_transactions">كل حوالات هذه الجهة</string>
+    <string name="create_customer">إنشاء جهة</string>
+    <string name="link_customer">ربط بجهة</string>
+    <string name="link_customer_title">ربط الحوالة بجهة</string>
+    <string name="search_customers_hint">ابحث من خلال الاسم</string>
+    <string name="no_customers">لا توجد جهات بعد</string>
     <string name="no_matching_customers">لا توجد نتائج مطابقة</string>
     <string name="confirm_link_customer_title">تأكيد الربط</string>
-    <string name="confirm_link_customer_message">هل تريد ربط هذه الحوالة بالزبون: %1$s؟</string>
+    <string name="confirm_link_customer_message">هل تريد ربط هذه الحوالة بالجهة: %1$s؟</string>
     <string name="link">ربط</string>
     <string name="customer_accounts_title">الحسابات المرتبطة</string>
     <string name="unlink">إلغاء الربط</string>
     <string name="confirm_unlink_title">إلغاء ربط الحساب</string>
-    <string name="confirm_unlink_message">هل تريد إلغاء ربط %1$s من %2$s بهذا الزبون؟</string>
-    <string name="confirm_delete_customer_title">حذف الزبون</string>
-    <string name="confirm_delete_customer_message">هذا آخر حساب مرتبط بهذا الزبون. هل تريد إلغاء الربط وحذف الزبون؟</string>
+    <string name="confirm_unlink_message">هل تريد إلغاء ربط %1$s من %2$s بهذه الجهة؟</string>
+    <string name="confirm_delete_customer_title">حذف الجهة</string>
+    <string name="confirm_delete_customer_message">هذا آخر حساب مرتبط بهذه الجهة. هل تريد إلغاء الربط وحذف الجهة؟</string>
     <string name="delete">حذف</string>
-    <string name="customer_name_hint">اسم الزبون</string>
+    <string name="customer_name_hint">اسم الجهة</string>
     <string name="save">حفظ</string>
     <string name="cancel">إلغاء</string>
     <string name="ok">موافق</string>
 
+    <string name="default_outgoing_enable_title">جعل الحوالات صادرة افتراضياً</string>
+    <string name="default_outgoing_enable_message">من الآن وصاعداً، كل حوالة جديدة لهذه الجهة لا يستطيع التطبيق تمييز اتجاهها ستُعتبر صادرة تلقائياً.\n\nالحوالات السابقة لن تتأثر.\nيمكنك تغيير اتجاه أي حوالة يدوياً في أي وقت.\nلإلغاء هذا الخيار، اذهب إلى شاشة الجهة.</string>
+    <string name="default_outgoing_enable_confirm">موافق</string>
+    <string name="default_outgoing_disable_title">إلغاء الصادرة افتراضياً</string>
+    <string name="default_outgoing_disable_message">هذه الجهة مميزة بأن حوالاتها صادرة افتراضياً.\n\nهل تريد إلغاء هذا الخيار بحيث تعود الحوالات المستقبلية لاتجاهها الطبيعي؟</string>
+    <string name="default_outgoing_disable_confirm">إلغاء الخيار</string>
+    <string name="default_outgoing_active_label">الحوالات صادرة افتراضياً</string>
+    <string name="default_outgoing_cancel_btn">إلغاء</string>
     <string name="tracking_toggle">تتبع الحوالات</string>
     <string name="tracking_desc">تشغيل أو إيقاف مراقبة إشعارات المحافظ</string>
     <string name="notif_permission">صلاحية الوصول للإشعارات</string>
@@ -117,11 +125,11 @@
     <string name="notif_summary_template">اليوم: PalPay %1$.2f ₪ | JawwalPay %2$.2f ₪ | بنك فلسطين %3$.2f ₪</string>
     <string name="service_latest_transfer_template">آخر حوالة: %1$s • %2$.2f ₪ • %3$s — تعتبر واردة افتراضيا</string>
     <string name="mark_as_outgoing_action">جعلها صادرة مني</string>
-    <string name="customers_title">الزبائن</string>
+    <string name="customers_title">الجهات</string>
     <string name="customer_accounts_count">%1$d حسابات مرتبطة</string>
     <string name="customer_incoming_total">وارد: %1$s %2$s</string>
     <string name="backup_restore_title">النسخ الاحتياطي والاسترداد</string>
-    <string name="backup_restore_desc">احفظ نسخة من الحوالات والزبائن والحسابات المرتبطة، أو استبدل البيانات الحالية بنسخة محفوظة.</string>
+    <string name="backup_restore_desc">احفظ نسخة من الحوالات والجهات والحسابات المرتبطة، أو استبدل البيانات الحالية بنسخة محفوظة.</string>
     <string name="create_backup">إنشاء نسخة</string>
     <string name="restore_backup">استرداد نسخة</string>
     <string name="backup_success">تم إنشاء النسخة الاحتياطية بنجاح</string>
@@ -130,7 +138,7 @@
     <string name="restore_failed">تعذر استرداد النسخة الاحتياطية</string>
     <string name="backup_invalid">ملف النسخة الاحتياطية غير صالح أو تم تعديله</string>
     <string name="restore_warning_title">استبدال كامل البيانات</string>
-    <string name="restore_warning_message">سيتم حذف كل الحوالات والزبائن والحسابات المرتبطة الحالية واستبدالها ببيانات النسخة الاحتياطية. لا يمكن التراجع عن هذه العملية.</string>
+    <string name="restore_warning_message">سيتم حذف كل الحوالات والجهات والحسابات المرتبطة الحالية واستبدالها ببيانات النسخة الاحتياطية. لا يمكن التراجع عن هذه العملية.</string>
 
     <string name="jawwal_pay_source_title">مصدر إشعارات جوال باي</string>
     <string name="jawwal_pay_source_desc">اختر كيف يتلقى التطبيق إشعارات حوالات جوال باي</string>
@@ -164,7 +172,7 @@
 • التواصل مع المطور عبر واتساب.<br>
 • تفعيل التطبيق.<br>
 • فتح روابط خارجية مثل دليل تشغيل التطبيق في الخلفية.<br>
-ولا يتم إرسال بيانات الحوالات أو الزبائن ضمن هذه العمليات.<br><br>
+ولا يتم إرسال بيانات الحوالات أو الجهات ضمن هذه العمليات.<br><br>
 
 <big><b>النسخة الاحتياطية</b></big><br>
 يمكنك إنشاء نسخة احتياطية من بياناتك وحفظها في أي مكان تختاره، مثل ذاكرة الهاتف أو Google Drive.<br>
@@ -180,13 +188,18 @@
 <big><b>إخلاء المسؤولية</b></big><br>
 هذا التطبيق ليس تطبيقًا مصرفيًا، ولا يُعد سجلًا ماليًا رسميًا.<br>
 ويتحمل المستخدم مسؤولية مراجعة بياناته والتأكد منها، ولا يتحمل المطور أي مسؤولية عن أي خسارة أو اختلاف قد ينتج عن فقدان إشعار أو حذف بيانات أو أي سبب خارج سيطرة التطبيق.]]></string>
-    <string name="overview_content"><![CDATA[مرحبًا بك في <b>دفتر الحوالات</b>.<br>
+    <string name="overview_content"><![CDATA[<h3>\uD83D\uDC68\u200D\uD83D\uDCBB من هو المطور</h3>
+<p>تم تطوير هذا التطبيق بواسطة المبرمج <b>عمر مصطفى أبو شنب</b> من قطاع غزة — مخيم النصيرات، وهو مطور تطبيقات متخصص في بناء حلول ذكية للهواتف المحمولة. من أبرز أعماله تطبيق <b>قارئ البطاقة</b> وتطبيق <b>حوّل بكبسة زر</b>.</p>
+<p>تم تصميم وتطوير هذا التطبيق ضمن الإمكانيات المتاحة بهدف تقديم أداة عملية تساعد أصحاب المحلات والبسطات في إدارة حوالاتهم المالية اليومية بسهولة ويسر.</p>
+<p>إذا كانت لديك فكرة لتطبيق أو ترغب في تطوير مشروع خاص، لا تتردد في التواصل عبر الضغط على الثلاث نقاط في شاشة الإعدادات ثم اختيار <b>تواصل مع المطور</b>.</p>
+<br/>
+مرحبًا بك في <b>دفتر الحوالات</b>.<br>
 يعمل التطبيق على تنظيم الحوالات المالية الواردة والصادرة من خلال قراءة إشعارات التطبيقات البنكية والمحافظ الإلكترونية التي تختارها، ثم حفظها محليًا على جهازك لتسهيل البحث عنها والرجوع إليها لاحقًا.<br><br>
 
 <big><b>ما الذي يقدمه التطبيق؟</b></big><br>
 • تسجيل الحوالات تلقائيًا بمجرد وصول إشعاراتها.<br>
 • البحث السريع بالاسم أو رقم الهاتف أو مبلغ الحوالة.<br>
-• إنشاء زبائن وربط عدة حسابات مختلفة بنفس الزبون.<br>
+• إنشاء جهات وربط عدة حسابات مختلفة بنفس الجهة.<br>
 • عرض إحصائيات الوارد والصادر لكل بنك أو محفظة.<br>
 • تصدير الحوالات إلى ملفات Excel.<br>
 • إنشاء واستعادة نسخة احتياطية للبيانات.<br><br>
@@ -238,6 +251,8 @@
 • رسالة SMS.<br>
 يعتمد التطبيق افتراضيًا على رسالة SMS لأنها أكثر ثباتًا في الوصول.<br>
 ويمكنك تغيير المصدر إلى إشعار تطبيق جوال باي من شاشة الإعدادات إذا رغبت بذلك.<br><br>
+<b>⚠️ تنبيه هام جداً لمستخدمي رسائل جوال باي (SMS):</b><br>
+في حال كنت فاتحاً محادثة رسائل SMS الخاصة بجوال باي داخل تطبيق الرسائل عند وصول الحوالة، فإن نظام أندرويد وتطبيق الرسائل لا يقومان بإصدار إشعار نظام بالرسالة الجديدة أثناء فتح المحادثة، وبالتالي لن يتمكن تطبيق دفتر الحوالات من رصد وتسجيل هذه الحوالة تلقائياً.<br><br>
 
 <big><b>الشاشة الرئيسية</b></big><br>
 تعرض الشاشة الرئيسية:<br>
@@ -255,30 +270,31 @@
 
 <big><b>خيارات الحوالة</b></big><br>
 عند الضغط على زر الثلاث نقاط ستظهر الخيارات التالية:<br>
-• عرض جميع حوالات هذا الزبون.<br>
-• إنشاء زبون جديد.<br>
-• ربط الحوالة بزبون موجود.<br>
+• إنشاء جهة جديدة.<br>
+• كل حوالات هذه الجهة.<br>
+• ربط الحوالة بجهة موجودة.<br>
 • تغيير اتجاه الحوالة (واردة / صادرة).<br>
-يساعد ربط عدة أسماء أو أرقام بزبون واحد على جمع جميع تعاملاته في مكان واحد، حتى لو استخدم أكثر من تطبيق أو ظهر اسمه بأكثر من صيغة.<br><br>
+• جعل الحوالة غير محتسبة (أو إلغاء عدم الاحتساب).<br>
+يساعد ربط عدة أسماء أو أرقام بجهة واحدة على جمع جميع تعاملاتها في مكان واحد، حتى لو استخدمت أكثر من تطبيق أو ظهر اسمها بأكثر من صيغة.<br><br>
 
-<big><b>شاشة الزبون</b></big><br>
+<big><b>شاشة الجهة</b></big><br>
 تعرض:<br>
-• جميع حوالات الزبون.<br>
+• جميع حوالات الجهة.<br>
 • الحسابات المرتبطة به.<br>
 • إمكانية تعديل الاسم.<br>
 • فك ارتباط أي حساب.<br>
-• حذف الزبون (دون حذف الحوالات).<br><br>
+• حذف الجهة (دون حذف الحوالات).<br><br>
 
 <big><b>شاشة البحث</b></big><br>
 يمكن البحث باستخدام:<br>
-• اسم الزبون.<br>
+• اسم الجهة.<br>
 • اسم الحساب.<br>
 • رقم الهاتف.<br>
 • قيمة المبلغ.<br>
 كما يمكن تصفية النتائج إلى واردة أو صادرة فقط.<br><br>
 
-<big><b>شاشة الزبائن</b></big><br>
-تعرض جميع الزبائن مع:<br>
+<big><b>شاشة الجهات</b></big><br>
+تعرض جميع الجهات مع:<br>
 • عدد الحسابات المرتبطة.<br>
 • إجمالي الحوالات.<br>
 • إمكانية البحث بالاسم.<br><br>
@@ -290,7 +306,7 @@
 
 <big><b>النسخة الاحتياطية</b></big><br>
 يمكن إنشاء نسخة احتياطية أو استعادتها في أي وقت، وحفظها على الهاتف أو على Google Drive.<br>
-تشمل النسخة الاحتياطية: الحوالات، الزبائن، والإعدادات المهمة.<br><br>
+تشمل النسخة الاحتياطية: الحوالات، الجهات، والإعدادات المهمة.<br><br>
 
 <big><b>الإعدادات</b></big><br>
 من شاشة الإعدادات يمكنك:<br>
@@ -301,24 +317,57 @@
 • فتح دليل عمل التطبيق في الخلفية.<br>
 • التواصل مع المطور.<br><br>
 
-<big><b>تفعيل التطبيق</b></big><br>
-التطبيق متاح للتجربة المجانية حتى 100 حوالة.<br>
-بعد ذلك:<br>
-• يستمر التطبيق في تسجيل الحوالات.<br>
-• تصبح بعض الميزات مقيدة حتى يتم التفعيل.<br>
-• تبقى بياناتك محفوظة كما هي.<br>
-يعتمد التفعيل على Android ID الخاص بجهازك، ويتم إصدار مفتاح تفعيل مرتبط بهذا الجهاز فقط، ولا يمكن استخدامه على جهاز آخر.]]></string>
-    <string name="license_activate_title">تفعيل التطبيق</string>
-    <string name="license_activate_message">لقد تجاوزت الحد المجاني (100 حوالة). انقر على زر التواصل عبر واتساب لإرسال رمز جهازك (الظاهر بالأسفل) والحصول على مفتاح تفعيل خاص بجهازك بمبلغ رمزي.</string>
-    <string name="license_activate_manual_message">قم بتفعيل التطبيق للتمتع بجميع الميزات بشكل دائم. انقر على زر التواصل عبر واتساب لإرسال رمز جهازك (الظاهر بالأسفل) والحصول على مفتاح تفعيل خاص بجهازك بمبلغ رمزي.</string>
-    <string name="feature_locked_title">ميزة غير متوفرة</string>
-    <string name="feature_locked_message">هذه الميزة غير متوفرة في المرحلة التجريبية المجانية. يرجى تفعيل التطبيق للوصول إليها.</string>
-    <string name="license_device_id">رمز الجهاز: %1$s</string>
-    <string name="license_hint_activation_code">أدخل رمز التفعيل هنا</string>
-    <string name="license_contact_whatsapp">تواصل عبر واتساب</string>
-    <string name="license_btn_activate">تفعيل</string>
-    <string name="license_error_empty_code">الرجاء إدخال رمز التفعيل</string>
-    <string name="license_error_invalid_code">رمز التفعيل غير صحيح</string>
-    <string name="license_activate_success">تم تفعيل التطبيق بنجاح!</string>
+<big><b>مجاني بالكامل وبدون قيود</b></big><br>
+تطبيق دفتر الحوالات مجاني بالكامل وبدون أي إعلانات أو قيود على عدد الحوالات أو الميزات.<br>
+صُمم هذا التطبيق خصيصاً لمساعدة أصحاب المحلات والبسطات والتجار في إدارة وتتبع حوالاتهم المالية اليومية بكل سهولة وأمان دون الحاجة إلى اتصال بالإنترنت.]]></string>
     <string name="contact_developer">تواصل مع المطور</string>
+
+    <!-- Excluded / غير محتسبة -->
+    <string name="mark_excluded">جعلها غير محتسبة</string>
+    <string name="mark_included">إلغاء عدم الاحتساب</string>
+    <string name="excluded_label">غير محتسبة</string>
+    <string name="excluded_first_time_title">ما معنى غير محتسبة؟</string>
+    <string name="excluded_first_time_message">عند جعل الحوالة غير محتسبة، لن يتم احتسابها في إجمالي المحافظ والبنوك سواء في الشاشة الرئيسية أو في الإشعار الدائم.\n\nيمكنك إلغاء عدم الاحتساب في أي وقت.</string>
+    <string name="default_excluded_enable_title">استبعاد الحوالات افتراضياً</string>
+    <string name="default_excluded_enable_message">من الآن وصاعداً، كل حوالة جديدة لهذه الجهة ستُعتبر غير محتسبة تلقائياً.\n\nالحوالات السابقة لن تتأثر.\nيمكنك تغيير حالة أي حوالة يدوياً.\nلإلغاء هذا الخيار، اذهب إلى شاشة الجهة.</string>
+    <string name="default_excluded_enable_confirm">موافق</string>
+    <string name="default_excluded_disable_title">إلغاء الاستبعاد الافتراضي</string>
+    <string name="default_excluded_disable_message">هذه الجهة مميزة بأن حوالاتها غير محتسبة افتراضياً.\n\nهل تريد إلغاء هذا الخيار؟</string>
+    <string name="default_excluded_disable_confirm">إلغاء الخيار</string>
+    <string name="default_excluded_active_label">الحوالات غير محتسبة افتراضياً</string>
+    <string name="default_excluded_cancel_btn">إلغاء</string>
+
+    <!-- Direction labels for notification -->
+    <string name="direction_incoming">واردة</string>
+    <string name="direction_outgoing">صادرة</string>
+    <string name="direction_incoming_default">واردة افتراضياً</string>
+    <string name="direction_outgoing_default">صادرة افتراضياً</string>
+    <string name="service_latest_transfer_template_v2">آخر حوالة: %1$s | %2$.2f ش | %3$s | %4$s</string>
+
+    <!-- Sorting -->
+    <string name="sort_by">ترتيب حسب:</string>
+    <string name="sort_alphabetical">ترتيب أبجدي</string>
+    <string name="sort_most_purchases">الأكثر شراءً</string>
+
+    <!-- Source filter -->
+    <string name="source_filter">حسب المصدر</string>
+    <string name="source_all">الكل</string>
+
+    <!-- Copy -->
+    <string name="copied_to_clipboard">تم النسخ للحافظة</string>
+
+    <!-- Unprocessed notifications -->
+    <string name="unprocessed_notifications_title">سجل الإشعارات</string>
+    <string name="unprocessed_notifications_desc">الإشعارات التي لم يتمكن التطبيق من معالجتها. يمكنك إرسالها للمطور لدعمها في التحديثات القادمة.</string>
+    <string name="send_to_developer">إرسال للمطور</string>
+    <string name="no_unprocessed_notifications">لا توجد إشعارات غير معالجة</string>
+    <string name="unprocessed_notifications_settings">سجل الإشعارات</string>
+    <string name="unprocessed_notifications_settings_desc">عرض الإشعارات التي لم يتم معالجتها من تطبيقات المحافظ والبنوك</string>
+    <string name="clear_log">تفريغ السجل</string>
+    <string name="clear_log_confirm_title">تفريغ السجل</string>
+    <string name="clear_log_confirm_message">هل أنت متأكد من حذف جميع الإشعارات غير المعالجة؟\n\nلا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="clear_log_confirm_btn">تفريغ</string>
+    <string name="view_log_btn">عرض السجل</string>
+    <string name="transactions_day_title">حوالات يوم %s</string>
+    <string name="transactions_range_title">من %1$s حتى %2$s</string>
 </resources>

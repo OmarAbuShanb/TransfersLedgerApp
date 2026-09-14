@@ -10,6 +10,7 @@
     android:paddingEnd="16dp"
     android:paddingBottom="0dp">
 
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -30,89 +31,56 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
             android:layout_weight="1"
-            android:text="@string/customers_title"
+            android:text="@string/unprocessed_notifications_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/searchInput"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/bg_card_stroked"
-        android:drawableStart="@drawable/ic_search_24"
-        android:drawablePadding="10dp"
-        android:hint="@string/search_customers_hint"
-        android:imeOptions="actionSearch"
-        android:importantForAutofill="no" android:inputType="textPersonName"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:singleLine="true"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_secondary" />
-
+    <!-- Info & Actions Card -->
     <LinearLayout
-        android:id="@+id/sortContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_card"
+        android:orientation="vertical"
+        android:padding="14dp">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="@string/sort_by"
+            android:lineSpacingExtra="2dp"
+            android:text="@string/unprocessed_notifications_desc"
             android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:textSize="13sp" />
 
         <TextView
-            android:id="@+id/sortAlphabeticalBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/ripple_chip_selected"
-            android:clipToOutline="true"
-            android:gravity="center"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:text="@string/sort_alphabetical"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/sortMostPurchasesBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
+            android:id="@+id/clearLogButton"
+            android:layout_width="match_parent"
+            android:layout_height="38dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/ripple_dialog_button_secondary"
             android:clipToOutline="true"
             android:gravity="center"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:text="@string/sort_most_purchases"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
+            android:text="@string/clear_log"
+            android:textColor="@color/outgoing"
+            android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
         android:layout_weight="1">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/customersRecycler"
+            android:id="@+id/notificationsRecycler"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:overScrollMode="never"
-            android:paddingBottom="12dp"
+            android:paddingBottom="16dp"
             android:scrollbars="none" />
 
         <TextView
@@ -121,9 +89,11 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:padding="24dp"
-            android:text="@string/no_customers"
+            android:text="@string/no_unprocessed_notifications"
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:visibility="gone" />
     </FrameLayout>
+
 </LinearLayout>

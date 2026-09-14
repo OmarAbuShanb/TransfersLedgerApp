@@ -7,7 +7,8 @@ enum class TransactionDirection {
 
 enum class DirectionSource {
     AUTO,
-    MANUAL
+    MANUAL,
+    DEFAULT
 }
 
 enum class IdentifierType {

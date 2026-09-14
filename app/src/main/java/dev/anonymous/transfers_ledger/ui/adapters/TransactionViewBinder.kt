@@ -1,5 +1,6 @@
 package dev.anonymous.transfers_ledger.ui.adapters
 
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.view.View
 import dev.anonymous.transfers_ledger.R
@@ -37,10 +38,22 @@ object TransactionViewBinder {
         val isOutgoing = transaction.direction == TransactionDirection.OUTGOING
         val signedAmount = "${if (isOutgoing) "-" else "+"}${TimeUtils.formatMoney(transaction.amount, locale)}"
         binding.amountText.text = "$signedAmount ${context.getString(R.string.currency_symbol)}"
-        binding.amountText.setTextColor(context.getColor(if (isOutgoing) R.color.outgoing else R.color.incoming))
-        binding.directionText.text = context.getString(if (isOutgoing) R.string.outgoing_label else R.string.incoming_label)
-        binding.directionText.setTextColor(context.getColor(if (isOutgoing) R.color.outgoing else R.color.incoming))
-        binding.directionText.setBackgroundResource(if (isOutgoing) R.drawable.bg_outgoing else R.drawable.bg_incoming)
+        
+        if (transaction.excluded) {
+            binding.directionText.text = context.getString(R.string.excluded_label)
+            binding.directionText.setBackgroundResource(R.drawable.bg_excluded)
+            binding.directionText.setTextColor(context.getColor(R.color.text_secondary))
+            binding.amountText.paintFlags = binding.amountText.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            binding.amountText.setTextColor(context.getColor(R.color.text_secondary))
+            binding.card.alpha = 0.6f
+        } else {
+            binding.amountText.paintFlags = binding.amountText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            binding.amountText.setTextColor(context.getColor(if (isOutgoing) R.color.outgoing else R.color.incoming))
+            binding.directionText.text = context.getString(if (isOutgoing) R.string.outgoing_label else R.string.incoming_label)
+            binding.directionText.setTextColor(context.getColor(if (isOutgoing) R.color.outgoing else R.color.incoming))
+            binding.directionText.setBackgroundResource(if (isOutgoing) R.drawable.bg_outgoing else R.drawable.bg_incoming)
+            binding.card.alpha = 1.0f
+        }
 
         binding.sourceBadge.text = PaymentSources.badgeText(transaction.walletSource)
         binding.sourceBadge.background = badgeBackground(context.getColor(PaymentSources.badgeColorRes(transaction.walletSource)))

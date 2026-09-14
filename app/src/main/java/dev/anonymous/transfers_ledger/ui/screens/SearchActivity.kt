@@ -224,15 +224,16 @@ class SearchActivity : FragmentActivity() {
         pendingTransactionId = item.transaction.id
         val transaction = item.transaction
         val toggleTitle = if (transaction.direction == TransactionDirection.OUTGOING) R.string.mark_incoming else R.string.mark_outgoing
+        val excludedTitle = if (transaction.excluded) R.string.mark_included else R.string.mark_excluded
         AnimatedPopupMenu.show(
             this,
             anchor,
             buildList {
-                add(AnimatedPopupMenu.Action(getString(toggleTitle)) {
-                val newDirection = if (transaction.direction == TransactionDirection.OUTGOING) TransactionDirection.INCOMING else TransactionDirection.OUTGOING
-                viewModel.updateDirection(transaction.id, newDirection)
-                adapter.refresh()
-                })
+                if (transaction.customerId == null) {
+                    add(AnimatedPopupMenu.Action(getString(R.string.create_customer)) {
+                        showCreateCustomerDialog(transaction)
+                    })
+                }
                 add(AnimatedPopupMenu.Action(getString(R.string.customer_transactions)) {
                     openCustomerTransactions(item)
                 })
@@ -240,14 +241,147 @@ class SearchActivity : FragmentActivity() {
                     add(AnimatedPopupMenu.Action(getString(R.string.link_customer)) {
                         showLinkCustomerSheet(transaction)
                     })
-                    add(AnimatedPopupMenu.Action(getString(R.string.create_customer)) {
-                        showCreateCustomerDialog(transaction)
-                    })
                 }
+                add(AnimatedPopupMenu.Action(getString(toggleTitle)) {
+                    handleDirectionToggle(transaction)
+                })
+                add(AnimatedPopupMenu.Action(getString(excludedTitle)) {
+                    handleExcludedToggle(transaction)
+                })
             },
             tag = POPUP_TRANSACTION,
             onDismiss = { pendingTransactionId = -1L }
         )
+    }
+
+    private fun handleDirectionToggle(transaction: TransactionEntity) {
+        val customerId = transaction.customerId
+        if (transaction.direction == TransactionDirection.INCOMING) {
+            viewModel.updateDirection(transaction.id, TransactionDirection.OUTGOING)
+            adapter.refresh()
+            if (customerId != null && customerId > 0L) {
+                lifecycleScope.launch {
+                    val isDefault = viewModel.isCustomerDefaultOutgoing(customerId)
+                    if (!isDefault) {
+                        AppDialogs.showConfirmation(
+                            fragmentManager = supportFragmentManager,
+                            title = getString(R.string.default_outgoing_enable_title),
+                            message = getString(R.string.default_outgoing_enable_message),
+                            positiveText = getString(R.string.default_outgoing_enable_confirm)
+                        ) {
+                            lifecycleScope.launch {
+                                viewModel.setCustomerDefaultOutgoing(customerId, true)
+                            }
+                        }
+                    }
+                }
+            } else {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_outgoing_enable_title),
+                    message = getString(R.string.default_outgoing_enable_message),
+                    positiveText = getString(R.string.default_outgoing_enable_confirm)
+                ) {
+                    viewModel.createCustomerAndSetDefaultOutgoing(transaction) {
+                        adapter.refresh()
+                    }
+                }
+            }
+        } else {
+            viewModel.updateDirection(transaction.id, TransactionDirection.INCOMING)
+            adapter.refresh()
+            if (customerId != null && customerId > 0L) {
+                lifecycleScope.launch {
+                    val isDefault = viewModel.isCustomerDefaultOutgoing(customerId)
+                    if (isDefault) {
+                        AppDialogs.showConfirmation(
+                            fragmentManager = supportFragmentManager,
+                            title = getString(R.string.default_outgoing_disable_title),
+                            message = getString(R.string.default_outgoing_disable_message),
+                            positiveText = getString(R.string.default_outgoing_disable_confirm)
+                        ) {
+                            lifecycleScope.launch {
+                                viewModel.setCustomerDefaultOutgoing(customerId, false)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleExcludedToggle(transaction: TransactionEntity) {
+        val newExcluded = !transaction.excluded
+        lifecycleScope.launch {
+            if (newExcluded && !viewModel.isExcludedExplanationShown()) {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.excluded_first_time_title),
+                    message = getString(R.string.excluded_first_time_message),
+                    positiveText = getString(R.string.default_excluded_enable_confirm)
+                ) {
+                    lifecycleScope.launch {
+                        viewModel.setExcludedExplanationShown()
+                        applyExcludedToggle(transaction, newExcluded)
+                    }
+                }
+            } else {
+                applyExcludedToggle(transaction, newExcluded)
+            }
+        }
+    }
+
+    private fun applyExcludedToggle(transaction: TransactionEntity, newExcluded: Boolean) {
+        viewModel.setTransactionExcluded(transaction.id, newExcluded) {
+            adapter.refresh()
+        }
+        
+        if (newExcluded) {
+            if (transaction.customerId != null && transaction.customerId > 0L) {
+                lifecycleScope.launch {
+                    val isAlreadyDefault = viewModel.isCustomerDefaultExcluded(transaction.customerId)
+                    if (!isAlreadyDefault) {
+                        AppDialogs.showConfirmation(
+                            fragmentManager = supportFragmentManager,
+                            title = getString(R.string.default_excluded_enable_title),
+                            message = getString(R.string.default_excluded_enable_message),
+                            positiveText = getString(R.string.default_excluded_enable_confirm)
+                        ) {
+                            lifecycleScope.launch {
+                                viewModel.setCustomerDefaultExcluded(transaction.customerId, true)
+                            }
+                        }
+                    }
+                }
+            } else {
+                AppDialogs.showConfirmation(
+                    fragmentManager = supportFragmentManager,
+                    title = getString(R.string.default_excluded_enable_title),
+                    message = getString(R.string.default_excluded_enable_message),
+                    positiveText = getString(R.string.default_excluded_enable_confirm)
+                ) {
+                    viewModel.createCustomerAndSetDefaultExcluded(transaction) {
+                        adapter.refresh()
+                    }
+                }
+            }
+        } else if (transaction.customerId != null && transaction.customerId > 0L) {
+            lifecycleScope.launch {
+                val isDefault = viewModel.isCustomerDefaultExcluded(transaction.customerId)
+                if (isDefault) {
+                    AppDialogs.showConfirmation(
+                        fragmentManager = supportFragmentManager,
+                        title = getString(R.string.default_excluded_disable_title),
+                        message = getString(R.string.default_excluded_disable_message),
+                        positiveText = getString(R.string.default_excluded_disable_confirm)
+                    ) {
+                        lifecycleScope.launch {
+                            viewModel.setCustomerDefaultExcluded(transaction.customerId, false)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun openCustomerTransactions(item: TransactionWithCustomer) {
@@ -263,7 +397,7 @@ class SearchActivity : FragmentActivity() {
             fragmentManager = supportFragmentManager,
             title = getString(R.string.create_customer),
             hint = transaction.senderName.ifBlank { getString(R.string.customer_name_hint) },
-            initialValue = ""
+            initialValue = transaction.senderName
         ) { name ->
             viewModel.createCustomerFromTransaction(transaction, name) {
                 adapter.refresh()
@@ -280,6 +414,11 @@ class SearchActivity : FragmentActivity() {
                 adapter.refresh()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        adapter.refresh()
     }
 
     override fun onDestroy() {

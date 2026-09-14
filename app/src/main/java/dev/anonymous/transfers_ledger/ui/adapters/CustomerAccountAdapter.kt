@@ -32,6 +32,9 @@ class CustomerAccountAdapter(
             binding.nameText.text = account.senderName
             binding.sourceText.text = account.walletSource
             binding.unlinkButton.setOnClickListener { onUnlinkClick(account) }
+            binding.copyTitleButton.setOnClickListener {
+                dev.anonymous.transfers_ledger.core.ClipboardUtils.copy(binding.root.context, account.senderName)
+            }
         }
     }
 

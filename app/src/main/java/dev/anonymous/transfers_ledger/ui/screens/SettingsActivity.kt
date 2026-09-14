@@ -81,8 +81,7 @@ class SettingsActivity : AppCompatActivity() {
                     dev.anonymous.transfers_ledger.ui.common.AnimatedPopupMenu.Action(
                         title = getString(R.string.contact_developer),
                         onClick = {
-                            val deviceHash = dev.anonymous.transfers_ledger.license.DeviceIdProvider.getHashedId(this@SettingsActivity)
-                            val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
+                            val url = "https://wa.me/970597152714"
                             val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                             try {
                                 startActivity(intent)
@@ -98,6 +97,9 @@ class SettingsActivity : AppCompatActivity() {
         binding.userGuideButton.setOnClickListener {
             openUserGuide()
         }
+        binding.unprocessedNotificationsButton.setOnClickListener {
+            startActivity(Intent(this, UnprocessedNotificationsActivity::class.java))
+        }
         binding.autostartSettingsButton.setOnClickListener {
             openAutoStartSettings()
         }
@@ -105,7 +107,6 @@ class SettingsActivity : AppCompatActivity() {
             openDontKillMyAppGuide()
         }
         binding.createBackupButton.setOnClickListener {
-            if (requireActivation()) return@setOnClickListener
             createBackupLauncher.launch(backupFileName())
         }
         binding.restoreBackupButton.setOnClickListener {
@@ -329,46 +330,6 @@ class SettingsActivity : AppCompatActivity() {
         startActivity(Intent(this, UserGuideActivity::class.java))
     }
 
-    /**
-     * Returns true (and shows activation dialog) when the app is NOT activated,
-     * meaning the caller should abort its action.
-     * Returns false when the app is activated and the action can proceed.
-     */
-    private fun requireActivation(): Boolean {
-        val lm = dev.anonymous.transfers_ledger.license.LicenseManager.getInstance(this)
-        if (lm.isActivated) return false
-
-        AppDialogs.showFeatureNotAvailableDialog(
-            fragmentManager = supportFragmentManager,
-            onActivateClick = {
-                val deviceHash = dev.anonymous.transfers_ledger.license.DeviceIdProvider.getHashedId(this)
-                AppDialogs.showActivationDialog(
-                    fragmentManager = supportFragmentManager,
-                    deviceIdHash = deviceHash,
-                    message = getString(R.string.license_activate_manual_message),
-                    isCancelable = true,
-                    onWhatsappClick = {
-                        val url = "https://wa.me/970597152714?text=رمز%20جهازي%3A%20$deviceHash"
-                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                        try {
-                            startActivity(intent)
-                        } catch (_: Exception) {
-                            Snackbar.make(binding.root, "واتساب غير مثبت", Snackbar.LENGTH_LONG).show()
-                        }
-                    },
-                    onActivate = { code ->
-                        if (lm.activate(code)) {
-                            Snackbar.make(binding.root, R.string.license_activate_success, Snackbar.LENGTH_LONG).show()
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                )
-            }
-        )
-        return true
-    }
 
     private fun updateForegroundService(enabled: Boolean) {
         val serviceIntent = Intent(this, TrackingForegroundService::class.java)

@@ -7,6 +7,14 @@ object PaymentSources {
     const val PALPAY_PACKAGE = "com.pcnc.wallet"
     const val JAWWAL_PAY_PACKAGE = "ps.Jawwal.JawwalPayNewPlus"
     const val BANK_OF_PALESTINE_PACKAGE = "com.pcnc.bop"
+    const val QUDS_BANK_PACKAGE = "com.icsfs.qb.test"
+    const val ARAB_ISLAMIC_BANK_PACKAGE = "com.pcnc.aib"
+    const val PIB_PACKAGE = "com.icsfs.pibank"
+
+    val trackedPackages = listOf(
+        PALPAY_PACKAGE, JAWWAL_PAY_PACKAGE, BANK_OF_PALESTINE_PACKAGE,
+        QUDS_BANK_PACKAGE, ARAB_ISLAMIC_BANK_PACKAGE, PIB_PACKAGE
+    )
 
     const val PALPAY = "PalPay"
     const val JAWWAL_PAY = "JawwalPay"

@@ -21,6 +21,7 @@ class DataStoreManager(private val context: Context) {
         val SUMMARY_PERIOD = stringPreferencesKey("summary_period")
         val EXPORT_NOTICE_SHOWN = booleanPreferencesKey("export_notice_shown")
         val JAWWAL_PAY_MODE = stringPreferencesKey("jawwal_pay_mode")
+        val EXCLUDED_EXPLANATION_SHOWN = booleanPreferencesKey("excluded_explanation_shown")
     }
 
     val isTrackingEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -85,6 +86,16 @@ class DataStoreManager(private val context: Context) {
     suspend fun setJawwalPayMode(mode: JawwalPayMode) {
         context.dataStore.edit { preferences ->
             preferences[JAWWAL_PAY_MODE] = mode.name
+        }
+    }
+
+    suspend fun isExcludedExplanationShown(): Boolean {
+        return context.dataStore.data.first()[EXCLUDED_EXPLANATION_SHOWN] ?: false
+    }
+
+    suspend fun setExcludedExplanationShown(shown: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[EXCLUDED_EXPLANATION_SHOWN] = shown
         }
     }
 }

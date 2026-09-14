@@ -92,16 +92,7 @@ class TrackingForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val repository = (application as TransfersLedgerApplication).repository
 
-        if (intent?.action == ACTION_MARK_OUTGOING) {
-            val transactionId = intent.getLongExtra(EXTRA_TRANSACTION_ID, -1L)
-            if (transactionId > 0L) {
-                serviceScope.launch {
-                    repository.updateDirection(transactionId, TransactionDirection.OUTGOING)
-                }
-            }
-        }
-
-        // عند بدء التشغيل من الإقلاع: نعرض إشعاراً خفيفاً فوراً ثم نتحقق من حالة التتبع
+        // الإقلاع من البدء
         val isBootStart = intent?.action == ACTION_BOOT_START
         if (isBootStart) {
             ensureBootForegroundStarted()
@@ -149,14 +140,14 @@ class TrackingForegroundService : Service() {
                 combine(
                     repository.isTrackingEnabled,
                     todayRangeFlow().flatMapLatest { repository.getTransactionsForStats(it) },
-                    repository.getLatestConvertibleTransaction(),
+                    repository.getLatestTransaction(),
                     notificationListenerEnabledFlow()
-                ) { trackingEnabled, transactions, convertible, listenerEnabled ->
+                ) { trackingEnabled, transactions, latestTransaction, listenerEnabled ->
                     ServiceNotificationState(
                         trackingEnabled = trackingEnabled,
                         listenerEnabled = listenerEnabled,
                         stats = TransactionStatsCalculator.calculate(transactions),
-                        convertibleTransaction = convertible
+                        latestTransaction = latestTransaction
                     )
                 }
                     .distinctUntilChanged()
@@ -278,7 +269,7 @@ class TrackingForegroundService : Service() {
                     bankOfPalestine = state.stats.bankOfPalestine.incoming,
                     net = state.stats.total.net
                 )
-                createNotification(getString(R.string.service_running_title), content, state.convertibleTransaction)
+                createNotification(getString(R.string.service_running_title), content, state.latestTransaction)
             }
         }
 
@@ -298,7 +289,7 @@ class TrackingForegroundService : Service() {
     private fun createNotification(
         title: String,
         content: String,
-        convertibleTransaction: TransactionWithCustomer?
+        latestTransaction: TransactionWithCustomer?
     ): Notification {
         val pendingIntent = Intent(this, MainActivity::class.java).let {
             PendingIntent.getActivity(this, 0, it, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -315,41 +306,41 @@ class TrackingForegroundService : Service() {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setSound(null)
 
-        val latestLine = convertibleTransaction?.let {
+        val latestLine = latestTransaction?.let {
+            val directionLabel = when {
+                it.transaction.excluded -> getString(R.string.excluded_label)
+                it.transaction.direction == TransactionDirection.INCOMING -> {
+                    if (it.transaction.directionSource == dev.anonymous.transfers_ledger.domain.model.DirectionSource.DEFAULT) {
+                        getString(R.string.direction_incoming_default)
+                    } else {
+                        getString(R.string.direction_incoming)
+                    }
+                }
+                it.transaction.direction == TransactionDirection.OUTGOING -> {
+                    if (it.transaction.directionSource == dev.anonymous.transfers_ledger.domain.model.DirectionSource.DEFAULT) {
+                        getString(R.string.direction_outgoing_default)
+                    } else {
+                        getString(R.string.direction_outgoing)
+                    }
+                }
+                else -> ""
+            }
             getString(
-                R.string.service_latest_transfer_template,
+                R.string.service_latest_transfer_template_v2,
                 it.displayName,
                 it.transaction.amount,
-                it.transaction.walletSource
+                it.transaction.walletSource,
+                directionLabel
             )
         }
 
         if (latestLine != null) {
-            builder
-                .setStyle(NotificationCompat.BigTextStyle().bigText("$content\n$latestLine"))
-                .addAction(
-                    0,
-                    getString(R.string.mark_as_outgoing_action),
-                    markOutgoingIntent(convertibleTransaction.transaction.id)
-                )
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText("$content\n$latestLine"))
         } else {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(content))
         }
 
         return builder.build()
-    }
-
-    private fun markOutgoingIntent(transactionId: Long): PendingIntent {
-        val intent = Intent(this, TrackingForegroundService::class.java).apply {
-            action = ACTION_MARK_OUTGOING
-            putExtra(EXTRA_TRANSACTION_ID, transactionId)
-        }
-        return PendingIntent.getService(
-            this,
-            transactionId.toInt(),
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
     }
 
     private fun createNotificationChannel() {
@@ -412,13 +403,11 @@ class TrackingForegroundService : Service() {
         val trackingEnabled: Boolean,
         val listenerEnabled: Boolean,
         val stats: dev.anonymous.transfers_ledger.domain.model.DashboardStats,
-        val convertibleTransaction: TransactionWithCustomer?
+        val latestTransaction: TransactionWithCustomer?
     )
 
     companion object {
-        const val ACTION_MARK_OUTGOING = "dev.anonymous.transfers_ledger.action.MARK_OUTGOING"
         const val ACTION_BOOT_START = "dev.anonymous.transfers_ledger.action.BOOT_START"
-        const val EXTRA_TRANSACTION_ID = "transaction_id"
         private const val NOTIFICATION_PERMISSION_CHECK_INTERVAL_MS = 5000L
     }
 }

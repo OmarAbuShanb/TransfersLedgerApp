@@ -8,3 +8,9 @@ data class CustomerSummary(
     val incomingTotal: Double,
     val outgoingTotal: Double
 )
+
+data class CustomerItemUiModel(
+    val summary: CustomerSummary,
+    val sortByPurchase: Boolean,
+    val query: String
+)

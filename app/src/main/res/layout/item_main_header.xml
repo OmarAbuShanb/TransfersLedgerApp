@@ -193,6 +193,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/all_transactions_title"
+            android:textAlignment="viewStart"
+            android:textDirection="locale"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />

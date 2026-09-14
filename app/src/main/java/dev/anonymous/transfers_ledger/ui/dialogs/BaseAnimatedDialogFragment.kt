@@ -1,5 +1,6 @@
 package dev.anonymous.transfers_ledger.ui.dialogs
 
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
@@ -71,14 +72,15 @@ abstract class BaseAnimatedDialogFragment : DialogFragment() {
         }
 
         val hPad = dpToPx(24)
+        val screenWidth = resources.displayMetrics.widthPixels
+        val maxAllowedWidth = dpToPx(420)
+        val targetWidth = minOf(screenWidth - (hPad * 2), maxAllowedWidth)
+
         val contentParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
+            targetWidth,
             FrameLayout.LayoutParams.WRAP_CONTENT,
             Gravity.CENTER
-        ).apply {
-            marginStart = hPad
-            marginEnd = hPad
-        }
+        )
 
         wrapper.addView(content, contentParams)
 
@@ -136,14 +138,8 @@ abstract class BaseAnimatedDialogFragment : DialogFragment() {
                     dialogController.isAppearanceLightStatusBars = hostController.isAppearanceLightStatusBars
                     dialogController.isAppearanceLightNavigationBars = hostController.isAppearanceLightNavigationBars
                 }
-            } else {
-                window.setLayout(
-                    WindowManager.LayoutParams.MATCH_PARENT,
-                    WindowManager.LayoutParams.WRAP_CONTENT
-                )
-                val hPad = dpToPx(24)
-                window.decorView.setPadding(hPad, 0, hPad, 0)
             }
+            applyDialogDimensions()
 
             val attrs = window.attributes
             attrs.windowAnimations = motion.windowAnimStyle
@@ -185,6 +181,36 @@ abstract class BaseAnimatedDialogFragment : DialogFragment() {
         else
             0
         return adjustFlag or stateFlag
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyDialogDimensions()
+    }
+
+    private fun applyDialogDimensions() {
+        val dlg = dialog ?: return
+        val window = dlg.window ?: return
+        val hPad = dpToPx(24)
+        val screenWidth = resources.displayMetrics.widthPixels
+        val maxAllowedWidth = dpToPx(420)
+        val targetWidth = minOf(screenWidth - (hPad * 2), maxAllowedWidth)
+
+        if (useFullScreenWindow) {
+            val wrapper = view as? FrameLayout
+            val card = wrapper?.getChildAt(0)
+            val params = card?.layoutParams as? FrameLayout.LayoutParams
+            if (params != null) {
+                params.width = targetWidth
+                card.layoutParams = params
+            }
+        } else {
+            window.setLayout(
+                targetWidth,
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+            window.decorView.setPadding(0, 0, 0, 0)
+        }
     }
 
     private fun dpToPx(value: Int): Int =

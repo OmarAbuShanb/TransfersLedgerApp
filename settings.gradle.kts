@@ -25,4 +25,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "TransfersLedgerApp"
 include(":app")
-include(":keygen")

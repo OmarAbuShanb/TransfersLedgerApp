@@ -50,6 +50,8 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
+                android:textAlignment="viewStart"
+                android:textDirection="locale"
                 android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -60,6 +62,8 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
+                android:textAlignment="viewStart"
+                android:textDirection="locale"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
@@ -67,6 +71,8 @@
                 android:id="@+id/dateText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textAlignment="viewStart"
+                android:textDirection="locale"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>

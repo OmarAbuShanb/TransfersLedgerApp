@@ -35,13 +35,15 @@ interface TransactionDao {
         WHERE (:direction IS NULL OR t.direction = :direction)
           AND (:startAt IS NULL OR t.timestamp >= :startAt)
           AND (:endAt IS NULL OR t.timestamp <= :endAt)
+          AND (:walletSource IS NULL OR t.walletSource = :walletSource)
         ORDER BY t.timestamp DESC
         """
     )
     fun getPagedTransactions(
         direction: String?,
         startAt: Long?,
-        endAt: Long?
+        endAt: Long?,
+        walletSource: String? = null
     ): PagingSource<Int, TransactionWithCustomer>
 
     @Query(
@@ -55,8 +57,8 @@ interface TransactionDao {
             (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.customerId = c.id AND t.direction = 'OUTGOING') AS outgoingTotal
         FROM customers c
         WHERE :normalizedQuery = ''
-           OR replace(replace(replace(replace(lower(c.displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
-        ORDER BY c.createdAt DESC
+           OR replace(replace(replace(replace(replace(replace(lower(c.displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا'), 'ة', 'ه'), 'ى', 'ي') LIKE '%' || :normalizedQuery || '%'
+        ORDER BY c.displayName COLLATE NOCASE ASC, c.id ASC
         """
     )
     fun getPagedCustomers(normalizedQuery: String): PagingSource<Int, CustomerSummary>
@@ -70,18 +72,18 @@ interface TransactionDao {
         WHERE :normalizedQuery != ''
           AND (:direction IS NULL OR t.direction = :direction)
           AND (
-            replace(replace(replace(replace(lower(c.displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
+            replace(replace(replace(replace(replace(replace(lower(c.displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا'), 'ة', 'ه'), 'ى', 'ي') LIKE '%' || :normalizedQuery || '%'
             OR (
                 ci.type != 'PHONE'
-                AND replace(replace(replace(replace(lower(ci.normalizedValue), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
+                AND replace(replace(replace(replace(replace(replace(lower(ci.normalizedValue), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا'), 'ة', 'ه'), 'ى', 'ي') LIKE '%' || :normalizedQuery || '%'
             )
             OR (
                 :searchPhone = 1
                 AND ci.type = 'PHONE'
-                AND replace(replace(replace(replace(lower(ci.normalizedValue), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
+                AND replace(replace(replace(replace(replace(replace(lower(ci.normalizedValue), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا'), 'ة', 'ه'), 'ى', 'ي') LIKE '%' || :normalizedQuery || '%'
             )
             OR (
-                replace(replace(replace(replace(lower(t.normalizedSender), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :normalizedQuery || '%'
+                replace(replace(replace(replace(replace(replace(lower(t.normalizedSender), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا'), 'ة', 'ه'), 'ى', 'ي') LIKE '%' || :normalizedQuery || '%'
                 AND (
                     :searchPhone = 1
                     OR (
@@ -122,6 +124,7 @@ interface TransactionDao {
         SELECT * FROM transactions
         WHERE (:startAt IS NULL OR timestamp >= :startAt)
           AND (:endAt IS NULL OR timestamp <= :endAt)
+          AND excluded = 0
         ORDER BY timestamp DESC
         """
     )
@@ -132,6 +135,7 @@ interface TransactionDao {
         SELECT * FROM transactions
         WHERE (:startAt IS NULL OR timestamp >= :startAt)
           AND (:endAt IS NULL OR timestamp <= :endAt)
+          AND excluded = 0
         ORDER BY timestamp DESC
         """
     )
@@ -190,7 +194,7 @@ interface TransactionDao {
         SELECT c.* FROM customers c
         INNER JOIN (
             SELECT MIN(id) AS id FROM customers
-            WHERE :query = '' OR replace(replace(replace(replace(lower(displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا') LIKE '%' || :query || '%'
+            WHERE :query = '' OR replace(replace(replace(replace(replace(replace(lower(displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا'), 'ة', 'ه'), 'ى', 'ي') LIKE '%' || :query || '%'
             GROUP BY lower(displayName)
         ) uniqueCustomers ON uniqueCustomers.id = c.id
         ORDER BY c.displayName ASC
@@ -255,4 +259,83 @@ interface TransactionDao {
         """
     )
     suspend fun countTransactionsInRange(startAt: Long?, endAt: Long?): Int
+
+    @Query("UPDATE customers SET defaultOutgoing = :defaultOutgoing, updatedAt = :updatedAt WHERE id = :customerId")
+    suspend fun updateCustomerDefaultOutgoing(customerId: Long, defaultOutgoing: Boolean, updatedAt: Long)
+
+    @Query("SELECT defaultOutgoing FROM customers WHERE id = :customerId")
+    suspend fun isCustomerDefaultOutgoing(customerId: Long): Boolean
+
+    @Query("""
+        SELECT c.defaultOutgoing FROM customers c
+        INNER JOIN customer_identifiers ci ON ci.customerId = c.id
+        WHERE ci.normalizedValue = :normalizedSender
+        LIMIT 1
+    """)
+    suspend fun isDefaultOutgoingBySender(normalizedSender: String): Boolean?
+
+    // --- Excluded / غير محتسبة ---
+
+    @Query("UPDATE transactions SET excluded = :excluded WHERE id = :transactionId")
+    suspend fun updateExcluded(transactionId: Long, excluded: Boolean)
+
+    @Query("UPDATE customers SET defaultExcluded = :defaultExcluded, updatedAt = :updatedAt WHERE id = :customerId")
+    suspend fun updateCustomerDefaultExcluded(customerId: Long, defaultExcluded: Boolean, updatedAt: Long)
+
+    @Query("SELECT defaultExcluded FROM customers WHERE id = :customerId")
+    suspend fun isCustomerDefaultExcluded(customerId: Long): Boolean
+
+    @Query("""
+        SELECT c.defaultExcluded FROM customers c
+        INNER JOIN customer_identifiers ci ON ci.customerId = c.id
+        WHERE ci.normalizedValue = :normalizedSender
+        LIMIT 1
+    """)
+    suspend fun isDefaultExcludedBySender(normalizedSender: String): Boolean?
+
+    // --- Customers by purchase total ---
+
+    @Query(
+        """
+        SELECT
+            c.id AS id,
+            c.displayName AS displayName,
+            c.createdAt AS createdAt,
+            (SELECT COUNT(*) FROM customer_identifiers ci WHERE ci.customerId = c.id) AS accountCount,
+            (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.customerId = c.id AND t.direction = 'INCOMING') AS incomingTotal,
+            (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.customerId = c.id AND t.direction = 'OUTGOING') AS outgoingTotal
+        FROM customers c
+        WHERE :normalizedQuery = ''
+           OR replace(replace(replace(replace(replace(replace(lower(c.displayName), 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ٱ', 'ا'), 'ة', 'ه'), 'ى', 'ي') LIKE '%' || :normalizedQuery || '%'
+        ORDER BY incomingTotal DESC, c.displayName COLLATE NOCASE ASC, c.id ASC
+        """
+    )
+    fun getPagedCustomersByPurchase(normalizedQuery: String): PagingSource<Int, CustomerSummary>
+
+    // --- Unprocessed notifications ---
+
+    @Insert
+    suspend fun insertUnprocessedNotification(notification: UnprocessedNotificationEntity)
+
+    @Query("SELECT * FROM unprocessed_notifications ORDER BY timestamp DESC")
+    fun getPagedUnprocessedNotifications(): PagingSource<Int, UnprocessedNotificationEntity>
+
+    @Query("DELETE FROM unprocessed_notifications")
+    suspend fun deleteAllUnprocessedNotifications()
+
+    @Query("SELECT COUNT(*) FROM unprocessed_notifications")
+    suspend fun getUnprocessedNotificationCount(): Int
+
+    // --- Latest transaction for notification ---
+
+    @Query(
+        """
+        SELECT t.*, c.displayName AS customerDisplayName
+        FROM transactions t
+        LEFT JOIN customers c ON c.id = t.customerId
+        ORDER BY t.timestamp DESC
+        LIMIT 1
+        """
+    )
+    fun getLatestTransaction(): Flow<TransactionWithCustomer?>
 }

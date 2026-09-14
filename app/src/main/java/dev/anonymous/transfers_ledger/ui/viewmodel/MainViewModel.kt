@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
@@ -30,6 +32,7 @@ import dev.anonymous.transfers_ledger.core.JawwalPayMode
 import dev.anonymous.transfers_ledger.core.SystemStatusUtils
 import dev.anonymous.transfers_ledger.core.TransactionStatsCalculator
 import dev.anonymous.transfers_ledger.data.local.db.CustomerEntity
+import dev.anonymous.transfers_ledger.data.local.db.CustomerItemUiModel
 import dev.anonymous.transfers_ledger.data.local.db.CustomerSummary
 import dev.anonymous.transfers_ledger.data.local.db.TransactionEntity
 import dev.anonymous.transfers_ledger.data.local.db.TransactionWithCustomer
@@ -54,12 +57,16 @@ class MainViewModel(
     private val customSummaryTitle = MutableStateFlow<String?>(null)
     val listFilter = MutableStateFlow(TransactionFilter.ALL)
     val listRange = MutableStateFlow(DateRange(null, null))
+    private val _sourceFilter = MutableStateFlow<String?>(null)
+    val sourceFilter: StateFlow<String?> = _sourceFilter.asStateFlow()
     private var systemStatusRefreshJob: Job? = null
 
     val pagedTransactions: Flow<PagingData<TransactionWithCustomer>> =
-        combine(listFilter, listRange) { filter, range -> filter to range }
-            .flatMapLatest { (filter, range) -> repository.getPagedTransactions(filter, range) }
+        combine(listFilter, listRange, _sourceFilter) { filter, range, source -> Triple(filter, range, source) }
+            .flatMapLatest { (filter, range, source) -> repository.getPagedTransactions(filter, range, source) }
             .cachedIn(viewModelScope)
+
+    val latestTransaction: Flow<TransactionWithCustomer?> = repository.getLatestTransaction()
 
     init {
         viewModelScope.launch { repository.ensureFirstOpenAt() }
@@ -70,13 +77,18 @@ class MainViewModel(
 
     private fun observeSummary() {
         combine(
-            repository.summaryPeriod,
-            customSummaryRange,
-            customSummaryTitle,
-            listFilter,
-            listRange
-        ) { period, customRange, customTitle, filter, range ->
-            SummarySelection(period, customRange, customTitle, filter, range)
+            combine(
+                repository.summaryPeriod,
+                customSummaryRange,
+                customSummaryTitle,
+                listFilter,
+                listRange
+            ) { period, customRange, customTitle, filter, range ->
+                Tuple5(period, customRange, customTitle, filter, range)
+            },
+            sourceFilter
+        ) { tuple, source ->
+            SummarySelection(tuple.p1, tuple.p2, tuple.p3, tuple.p4, tuple.p5, source)
         }
             .flatMapLatest { selection ->
                 flow {
@@ -89,7 +101,7 @@ class MainViewModel(
             .onEach { (selection, transactions) ->
                 val stats = TransactionStatsCalculator.calculate(transactions)
                 val summaryTitle = formatSummaryTitle(selection.period, selection.customRange)
-                val listTitle = formatListTitle(selection.listFilter, selection.listRange)
+                val listTitle = formatListTitle(selection.listFilter, selection.listRange, selection.sourceFilter)
                 _uiState.update {
                     it.copy(
                         isReady = true,
@@ -141,12 +153,49 @@ class MainViewModel(
         listRange.value = DateRange(null, null)
     }
 
+    fun setSourceFilter(source: String?) {
+        _sourceFilter.value = source
+    }
+
     fun searchPagedTransactions(query: String, filter: TransactionFilter): Flow<PagingData<TransactionWithCustomer>> {
         return repository.searchPagedTransactions(query, filter).cachedIn(viewModelScope)
     }
 
+    val customerSearchQuery = MutableStateFlow("")
+    val customerSortByPurchase = MutableStateFlow(false)
+
+    @OptIn(kotlinx.coroutines.FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val pagedCustomers: Flow<PagingData<CustomerItemUiModel>> =
+        combine(
+            customerSearchQuery.debounce { query -> if (query.isBlank()) 0L else 200L },
+            customerSortByPurchase
+        ) { query, sortByPurchase ->
+            query to sortByPurchase
+        }
+            .flatMapLatest { (query, sortByPurchase) ->
+                val sourceFlow = if (sortByPurchase) {
+                    repository.getPagedCustomersByPurchase(query)
+                } else {
+                    repository.getPagedCustomers(query)
+                }
+                sourceFlow.map { pagingData ->
+                    pagingData.map { summary ->
+                        CustomerItemUiModel(
+                            summary = summary,
+                            sortByPurchase = sortByPurchase,
+                            query = query
+                        )
+                    }
+                }
+            }
+            .cachedIn(viewModelScope)
+
     fun getPagedCustomers(query: String): Flow<PagingData<CustomerSummary>> {
         return repository.getPagedCustomers(query).cachedIn(viewModelScope)
+    }
+
+    fun getPagedCustomersByPurchase(query: String): Flow<PagingData<CustomerSummary>> {
+        return repository.getPagedCustomersByPurchase(query).cachedIn(viewModelScope)
     }
 
     suspend fun getTransactionsForExport(range: DateRange): List<TransactionWithCustomer> {
@@ -159,6 +208,43 @@ class MainViewModel(
         }
     }
 
+    suspend fun isCustomerDefaultOutgoing(customerId: Long): Boolean {
+        return withContext(Dispatchers.IO) {
+            repository.isCustomerDefaultOutgoing(customerId)
+        }
+    }
+
+    fun setCustomerDefaultOutgoing(customerId: Long, defaultOutgoing: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setCustomerDefaultOutgoing(customerId, defaultOutgoing)
+        }
+    }
+
+    fun setTransactionExcluded(transactionId: Long, excluded: Boolean, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.setTransactionExcluded(transactionId, excluded)
+            onDone()
+        }
+    }
+
+    fun setCustomerDefaultExcluded(customerId: Long, defaultExcluded: Boolean) {
+        viewModelScope.launch {
+            repository.setCustomerDefaultExcluded(customerId, defaultExcluded)
+        }
+    }
+
+    suspend fun isCustomerDefaultExcluded(customerId: Long): Boolean {
+        return repository.isCustomerDefaultExcluded(customerId)
+    }
+
+    suspend fun isExcludedExplanationShown(): Boolean {
+        return repository.isExcludedExplanationShown()
+    }
+
+    suspend fun setExcludedExplanationShown() {
+        repository.setExcludedExplanationShown(true)
+    }
+
     fun createCustomerFromTransaction(
         transaction: TransactionEntity,
         displayName: String,
@@ -169,6 +255,26 @@ class MainViewModel(
                 repository.createCustomerFromTransaction(transaction, displayName)
             }
             onComplete?.invoke()
+        }
+    }
+
+    fun createCustomerAndSetDefaultOutgoing(transaction: TransactionEntity, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val customerId = repository.createCustomerFromTransaction(transaction, transaction.senderName)
+            if (customerId > 0) {
+                repository.setCustomerDefaultOutgoing(customerId, true)
+            }
+            onDone()
+        }
+    }
+
+    fun createCustomerAndSetDefaultExcluded(transaction: TransactionEntity, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val customerId = repository.createCustomerFromTransaction(transaction, transaction.senderName)
+            if (customerId > 0) {
+                repository.setCustomerDefaultExcluded(customerId, true)
+            }
+            onDone()
         }
     }
 
@@ -253,21 +359,39 @@ class MainViewModel(
         }
     }
 
-    private fun formatListTitle(filter: TransactionFilter, range: DateRange): String {
-        val start = range.startAt
-        if (start != null) {
-            val end = range.endAt ?: start
-            return if (isSameDay(start, end)) {
-                "حوالات يوم ${headerDateFormat.format(start)}"
+    private fun formatListTitle(filter: TransactionFilter, range: DateRange, source: String? = null): String {
+        val app = getApplication<Application>()
+        val baseTitle = run {
+            val start = range.startAt
+            if (start != null) {
+                val end = range.endAt ?: start
+                if (isSameDay(start, end)) {
+                    app.getString(R.string.transactions_day_title, headerDateFormat.format(start))
+                } else {
+                    app.getString(
+                        R.string.transactions_range_title,
+                        headerDateFormat.format(start),
+                        headerDateFormat.format(end)
+                    )
+                }
             } else {
-                "من ${headerDateFormat.format(start)} حتى ${headerDateFormat.format(end)}"
+                when (filter) {
+                    TransactionFilter.ALL -> app.getString(R.string.all_transactions_title)
+                    TransactionFilter.INCOMING -> app.getString(R.string.incoming_transactions_title)
+                    TransactionFilter.OUTGOING -> app.getString(R.string.outgoing_transactions_title)
+                }
             }
         }
-        val app = getApplication<Application>()
-        return when (filter) {
-            TransactionFilter.ALL -> app.getString(R.string.all_transactions_title)
-            TransactionFilter.INCOMING -> app.getString(R.string.incoming_transactions_title)
-            TransactionFilter.OUTGOING -> app.getString(R.string.outgoing_transactions_title)
+        return if (source != null) {
+            val sourceName = when (source) {
+                dev.anonymous.transfers_ledger.core.PaymentSources.PALPAY -> app.getString(R.string.palpay_label)
+                dev.anonymous.transfers_ledger.core.PaymentSources.JAWWAL_PAY -> app.getString(R.string.jawwalpay_label)
+                dev.anonymous.transfers_ledger.core.PaymentSources.BANK_OF_PALESTINE -> app.getString(R.string.bop_label)
+                else -> source
+            }
+            "\u200F$baseTitle - $sourceName"
+        } else {
+            baseTitle
         }
     }
 
@@ -278,12 +402,15 @@ class MainViewModel(
                c1.get(java.util.Calendar.DAY_OF_YEAR) == c2.get(java.util.Calendar.DAY_OF_YEAR)
     }
 
+    private data class Tuple5<A, B, C, D, E>(val p1: A, val p2: B, val p3: C, val p4: D, val p5: E)
+
     private data class SummarySelection(
         val period: SummaryPeriod,
         val customRange: DateRange?,
         val customTitle: String?,
         val listFilter: TransactionFilter,
-        val listRange: DateRange
+        val listRange: DateRange,
+        val sourceFilter: String? = null
     )
 
     class Factory(private val application: Application, private val repository: TransactionRepository) : ViewModelProvider.Factory {

@@ -78,6 +78,7 @@ object BackupCodec {
             .put("rawText", rawText)
             .put("rawTitle", rawTitle)
             .put("walletSource", walletSource)
+            .put("excluded", excluded)
     }
 
     private fun CustomerEntity.toJson(): JSONObject {
@@ -86,6 +87,8 @@ object BackupCodec {
             .put("displayName", displayName)
             .put("createdAt", createdAt)
             .put("updatedAt", updatedAt)
+            .put("defaultOutgoing", defaultOutgoing)
+            .put("defaultExcluded", defaultExcluded)
     }
 
     private fun CustomerIdentifierEntity.toJson(): JSONObject {
@@ -113,7 +116,8 @@ object BackupCodec {
             timestamp = getLong("timestamp"),
             rawText = getString("rawText"),
             rawTitle = getString("rawTitle"),
-            walletSource = getString("walletSource")
+            walletSource = getString("walletSource"),
+            excluded = optBoolean("excluded", false)
         )
     }
 
@@ -122,7 +126,9 @@ object BackupCodec {
             id = getLong("id"),
             displayName = getString("displayName"),
             createdAt = getLong("createdAt"),
-            updatedAt = getLong("updatedAt")
+            updatedAt = getLong("updatedAt"),
+            defaultOutgoing = optBoolean("defaultOutgoing", false),
+            defaultExcluded = optBoolean("defaultExcluded", false)
         )
     }
 
